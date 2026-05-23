@@ -135,7 +135,7 @@ export default function ReportEditorPage() {
     <AppShell notifications={3}>
       {/* 4-컬럼: 환자정보 · 검사결과 · AI 판독결과 · AI 종합소견 — 세로 꽉 채움 */}
       <div className="max-w-[1800px] mx-auto px-5 py-4 grid grid-cols-1 lg:grid-cols-[390px_1fr_1fr_1.1fr] gap-4 items-stretch min-h-[calc(100vh-5rem)]">
-        <PatientInfoSidebar patient={patient} className="h-full lg:self-start lg:sticky lg:top-14 lg:h-[calc(100vh-3.5rem)]" />
+        <PatientInfoSidebar patient={patient} className="lg:sticky lg:top-14 lg:h-[calc(100vh-3.5rem)] lg:overflow-y-auto" />
         <PaneExamResults patient={patient} modalResults={modalResults} />
         <PaneAIAnalysis patient={patient} />
         <PaneAISummary
