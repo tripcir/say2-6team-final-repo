@@ -13,7 +13,7 @@ class LabClinicalSheet extends StatelessWidget {
   final String? summary;
   final String? riskLevel;
 
-  const LabClinicalSheet({
+  LabClinicalSheet({
     super.key,
     this.patientName = '환자',
     this.age = 0,
@@ -30,7 +30,7 @@ class LabClinicalSheet extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      color: Colors.white,
+      color: AppColors.surface,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
@@ -43,12 +43,12 @@ class LabClinicalSheet extends StatelessWidget {
           ),
           // lab_summary 표
           Padding(
-            padding: const EdgeInsets.all(12),
+            padding: EdgeInsets.all(12),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const _SectionLabel('혈액 검사 결과 (Lab Summary)'),
-                const SizedBox(height: 6),
+                _SectionLabel('혈액 검사 결과 (Lab Summary)'),
+                SizedBox(height: 6),
                 Container(
                   decoration: BoxDecoration(
                     border: Border.all(color: AppColors.slate200),
@@ -58,15 +58,15 @@ class LabClinicalSheet extends StatelessWidget {
                     children: [
                       // 헤더
                       Container(
-                        padding: const EdgeInsets.symmetric(
+                        padding: EdgeInsets.symmetric(
                             horizontal: 8, vertical: 6),
-                        decoration: const BoxDecoration(
+                        decoration: BoxDecoration(
                           color: AppColors.slate100,
                           border: Border(
                               bottom: BorderSide(color: AppColors.slate200)),
                         ),
                         child: Row(
-                          children: const [
+                          children: [
                             Expanded(flex: 5, child: _ColH('항목')),
                             Expanded(
                                 flex: 3,
@@ -78,7 +78,7 @@ class LabClinicalSheet extends StatelessWidget {
                         ),
                       ),
                       if (labSummary.isEmpty)
-                        const Padding(
+                        Padding(
                           padding: EdgeInsets.all(16),
                           child: Text('검사 결과 없음',
                               style: TextStyle(
@@ -101,8 +101,8 @@ class LabClinicalSheet extends StatelessWidget {
           // 요약
           if (summary != null && summary!.isNotEmpty)
             Container(
-              margin: const EdgeInsets.all(12),
-              padding: const EdgeInsets.all(10),
+              margin: EdgeInsets.all(12),
+              padding: EdgeInsets.all(10),
               decoration: BoxDecoration(
                 color: AppColors.slate50,
                 border: Border.all(color: AppColors.slate300),
@@ -111,10 +111,10 @@ class LabClinicalSheet extends StatelessWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const _SectionLabel('요약 (Summary)'),
-                  const SizedBox(height: 4),
+                  _SectionLabel('요약 (Summary)'),
+                  SizedBox(height: 4),
                   Text(summary!,
-                      style: const TextStyle(
+                      style: TextStyle(
                           fontSize: 11,
                           color: AppColors.slate800,
                           height: 1.6)),
@@ -147,24 +147,24 @@ Future<void> showLabClinicalSheet(
       child: Scaffold(
         backgroundColor: AppColors.slate100,
         appBar: AppBar(
-          leading: const SizedBox(),
+          leading: SizedBox(),
           leadingWidth: 0,
-          title: const Text('혈액 검사 결과지',
+          title: Text('혈액 검사 결과지',
               style: TextStyle(
                   fontSize: 15,
                   fontWeight: FontWeight.bold,
                   color: AppColors.slate900)),
           actions: [
             IconButton(
-                icon: const Icon(Icons.close, color: AppColors.slate700),
+                icon: Icon(Icons.close, color: AppColors.slate700),
                 onPressed: () => Navigator.pop(ctx)),
           ],
         ),
         body: SingleChildScrollView(
-          padding: const EdgeInsets.all(12),
+          padding: EdgeInsets.all(12),
           child: Container(
             decoration: BoxDecoration(
-              color: Colors.white,
+              color: AppColors.surface,
               border: Border.all(color: AppColors.slate300),
               borderRadius: BorderRadius.circular(4),
             ),
@@ -187,7 +187,7 @@ Future<void> showLabClinicalSheet(
 
 // 백엔드 LAB 응답의 feature 키(영문)를 의사용 한국어 라벨로 매핑.
 // 백엔드: app/clients/lab_loader.py 의 LOINC/MIMIC feature 식별자와 일치.
-const Map<String, String> _featureLabelKo = {
+Map<String, String> _featureLabelKo = {
   'wbc': '백혈구 (WBC)',
   'hemoglobin': '헤모글로빈 (Hb)',
   'hematocrit': '헤마토크릿 (Hct)',
@@ -231,7 +231,7 @@ String _humanFeatureName(String feature) {
 class _LabRow extends StatelessWidget {
   final Map<String, dynamic> row;
   final bool isLast;
-  const _LabRow({required this.row, required this.isLast});
+  _LabRow({required this.row, required this.isLast});
 
   @override
   Widget build(BuildContext context) {
@@ -274,15 +274,15 @@ class _LabRow extends StatelessWidget {
     final flagColor = (flag == 'H' || flag == 'HH')
         ? AppColors.critical
         : (flag == 'L' || flag == 'LL')
-            ? const Color(0xFF2563EB)
+            ? Color(0xFF2563EB)
             : AppColors.slate700;
 
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
+      padding: EdgeInsets.symmetric(horizontal: 8, vertical: 6),
       decoration: BoxDecoration(
         border: isLast
             ? null
-            : const Border(
+            : Border(
                 bottom: BorderSide(color: AppColors.slate100)),
       ),
       child: Row(
@@ -290,7 +290,7 @@ class _LabRow extends StatelessWidget {
           Expanded(
             flex: 5,
             child: Text(name,
-                style: const TextStyle(
+                style: TextStyle(
                     fontSize: 11, color: AppColors.slate800)),
           ),
           Expanded(
@@ -308,12 +308,12 @@ class _LabRow extends StatelessWidget {
           Expanded(
             flex: 4,
             child: Padding(
-              padding: const EdgeInsets.only(left: 8),
+              padding: EdgeInsets.only(left: 8),
               child: Text(
                 ref != null
                     ? '$ref${unit != null ? " $unit" : ""}'
                     : (unit ?? ''),
-                style: const TextStyle(
+                style: TextStyle(
                     fontSize: 10,
                     color: AppColors.slate400,
                     fontFamily: 'monospace'),
@@ -338,7 +338,7 @@ class _LabRow extends StatelessWidget {
 }
 
 // 웹과 동일한 6h 예측 5개 메트릭 라벨 (PROG_KO)
-const Map<String, String> _prog6hLabel = {
+Map<String, String> _prog6hLabel = {
   'hemoglobin_down': 'Hemoglobin 감소',
   'creatinine_up':   'Creatinine 증가',
   'potassium_worse': 'Potassium 악화',
@@ -348,7 +348,7 @@ const Map<String, String> _prog6hLabel = {
 
 class _PrognosisCard extends StatelessWidget {
   final Map<String, dynamic> prognosis;
-  const _PrognosisCard({required this.prognosis});
+  _PrognosisCard({required this.prognosis});
 
   @override
   Widget build(BuildContext context) {
@@ -384,11 +384,11 @@ class _PrognosisCard extends StatelessWidget {
     }
 
     // warnings 배열 (백엔드 prognosis_6h.warnings)
-    final warnings = (prognosis['warnings'] as List?)?.cast<String>() ?? const [];
+    final warnings = (prognosis['warnings'] as List?)?.cast<String>() ?? [];
 
     return Container(
-      margin: const EdgeInsets.symmetric(horizontal: 12),
-      padding: const EdgeInsets.all(10),
+      margin: EdgeInsets.symmetric(horizontal: 12),
+      padding: EdgeInsets.all(10),
       decoration: BoxDecoration(
         color: toneBg,
         border: Border.all(color: toneBorder),
@@ -401,8 +401,8 @@ class _PrognosisCard extends StatelessWidget {
           Row(
             children: [
               Icon(Icons.trending_up, size: 16, color: toneFg),
-              const SizedBox(width: 6),
-              const Expanded(
+              SizedBox(width: 6),
+              Expanded(
                 child: Text('XGBoost 5-앙상블 · 6시간 후 악화 예측',
                     style: TextStyle(
                         fontSize: 12,
@@ -410,7 +410,7 @@ class _PrognosisCard extends StatelessWidget {
                         color: AppColors.slate800)),
               ),
               Container(
-                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                padding: EdgeInsets.symmetric(horizontal: 8, vertical: 2),
                 decoration: BoxDecoration(
                   color: toneFg.withAlpha(30),
                   border: Border(left: BorderSide(color: toneFg, width: 3)),
@@ -425,21 +425,21 @@ class _PrognosisCard extends StatelessWidget {
           ),
           // warnings 표시
           if (warnings.isNotEmpty) ...[
-            const SizedBox(height: 6),
+            SizedBox(height: 6),
             Container(
-              padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 3),
+              padding: EdgeInsets.symmetric(horizontal: 6, vertical: 3),
               decoration: BoxDecoration(
                 color: AppColors.critical.withAlpha(25),
                 border: Border.all(color: AppColors.critical.withAlpha(120)),
               ),
               child: Row(
                 children: [
-                  const Icon(Icons.warning_amber, size: 12, color: AppColors.critical),
-                  const SizedBox(width: 4),
+                  Icon(Icons.warning_amber, size: 12, color: AppColors.critical),
+                  SizedBox(width: 4),
                   Expanded(
                     child: Text(
                       '경고: ${warnings.join(", ")}',
-                      style: const TextStyle(
+                      style: TextStyle(
                           fontSize: 10,
                           fontWeight: FontWeight.bold,
                           color: AppColors.critical),
@@ -449,10 +449,10 @@ class _PrognosisCard extends StatelessWidget {
               ),
             ),
           ],
-          const SizedBox(height: 8),
+          SizedBox(height: 8),
           // 5개 메트릭 막대 차트
           ...metrics.map((m) => Padding(
-                padding: const EdgeInsets.only(bottom: 4),
+                padding: EdgeInsets.only(bottom: 4),
                 child: _Prog6hBar(label: m.label, value: m.value),
               )),
         ],
@@ -465,7 +465,7 @@ class _PrognosisCard extends StatelessWidget {
 class _Prog6hBar extends StatelessWidget {
   final String label;
   final double value; // 0.0 ~ 1.0
-  const _Prog6hBar({required this.label, required this.value});
+  _Prog6hBar({required this.label, required this.value});
 
   @override
   Widget build(BuildContext context) {
@@ -480,7 +480,7 @@ class _Prog6hBar extends StatelessWidget {
         SizedBox(
           width: 96,
           child: Text(label,
-              style: const TextStyle(fontSize: 10, color: AppColors.slate700)),
+              style: TextStyle(fontSize: 10, color: AppColors.slate700)),
         ),
         Expanded(
           child: Container(
@@ -501,7 +501,7 @@ class _Prog6hBar extends StatelessWidget {
             ),
           ),
         ),
-        const SizedBox(width: 6),
+        SizedBox(width: 6),
         SizedBox(
           width: 36,
           child: Text(
@@ -526,7 +526,7 @@ class _Header extends StatelessWidget {
   final String sexLabel;
   final String? patientId;
   final String? riskLevel;
-  const _Header({
+  _Header({
     required this.patientName,
     required this.age,
     required this.sexLabel,
@@ -555,8 +555,8 @@ class _Header extends StatelessWidget {
       _ => (AppColors.slate100, AppColors.slate600, '—'),
     };
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-      decoration: const BoxDecoration(
+      padding: EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+      decoration: BoxDecoration(
           border: Border(bottom: BorderSide(color: AppColors.slate300))),
       child: Row(
         children: [
@@ -565,13 +565,13 @@ class _Header extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text('$patientName · $sexLabel · $age세',
-                    style: const TextStyle(
+                    style: TextStyle(
                         fontSize: 13,
                         fontWeight: FontWeight.bold,
                         color: AppColors.slate900)),
                 if (patientId != null)
                   Text('ID: $patientId',
-                      style: const TextStyle(
+                      style: TextStyle(
                           fontSize: 10,
                           color: AppColors.slate500,
                           fontFamily: 'monospace')),
@@ -580,7 +580,7 @@ class _Header extends StatelessWidget {
           ),
           Container(
             padding:
-                const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                EdgeInsets.symmetric(horizontal: 8, vertical: 4),
             decoration: BoxDecoration(
                 color: riskBg, borderRadius: BorderRadius.circular(2)),
             child: Text(riskLabel,
@@ -597,22 +597,22 @@ class _Header extends StatelessWidget {
 
 class _Footer extends StatelessWidget {
   final String modal;
-  const _Footer({required this.modal});
+  _Footer({required this.modal});
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-      decoration: const BoxDecoration(
+      padding: EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+      decoration: BoxDecoration(
           border: Border(top: BorderSide(color: AppColors.slate200))),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
           Text('say-6 Deep$modal v2.0',
-              style: const TextStyle(
+              style: TextStyle(
                   fontSize: 9,
                   color: AppColors.slate400,
                   fontFamily: 'monospace')),
-          const Text('응급실 멀티모달 AI 진단 보조',
+          Text('응급실 멀티모달 AI 진단 보조',
               style: TextStyle(
                   fontSize: 9,
                   color: AppColors.slate400,
@@ -625,10 +625,10 @@ class _Footer extends StatelessWidget {
 
 class _SectionLabel extends StatelessWidget {
   final String text;
-  const _SectionLabel(this.text);
+  _SectionLabel(this.text);
   @override
   Widget build(BuildContext context) => Text(text,
-      style: const TextStyle(
+      style: TextStyle(
           fontSize: 14,
           fontWeight: FontWeight.bold,
           color: AppColors.slate900));
@@ -637,11 +637,11 @@ class _SectionLabel extends StatelessWidget {
 class _ColH extends StatelessWidget {
   final String text;
   final TextAlign align;
-  const _ColH(this.text, {this.align = TextAlign.left});
+  _ColH(this.text, {this.align = TextAlign.left});
   @override
   Widget build(BuildContext context) => Text(text,
       textAlign: align,
-      style: const TextStyle(
+      style: TextStyle(
           fontSize: 10,
           fontWeight: FontWeight.bold,
           color: AppColors.slate600));

@@ -7,6 +7,7 @@ import 'core/services/push_service.dart';
 import 'firebase_options.dart';
 import 'router.dart';
 import 'shared/theme/app_theme.dart';
+import 'shared/theme/theme_provider.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -64,12 +65,22 @@ class _Say6DoctorAppState extends ConsumerState<Say6DoctorApp> {
   @override
   Widget build(BuildContext context) {
     final router = ref.watch(routerProvider);
+    final dark = ref.watch(darkModeProvider);
+    // 전역 토큰 플래그 동기화 — AppColors getter가 이 값으로 색을 고른다.
+    AppColors.dark = dark;
     return MaterialApp.router(
-      title: 'say-6 doctor',
+      title: 'EMON Med®',
       debugShowCheckedModeBanner: false,
-      theme: buildSay6Theme(),
+      theme: buildSay6Theme(dark: dark),
       routerConfig: router,
-      builder: (context, child) => _PhoneFrame(child: child ?? const SizedBox()),
+      // dark 토글 시 ValueKey가 바뀌어 페이지 서브트리를 강제 리빌드 →
+      // AppColors getter가 새 모드 색을 다시 읽는다 (라우트 상태는 GoRouter가 보존).
+      builder: (context, child) => _PhoneFrame(
+        child: KeyedSubtree(
+          key: ValueKey(dark),
+          child: child ?? const SizedBox(),
+        ),
+      ),
     );
   }
 }

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../core/api/triage_api.dart';
 import '../../shared/theme/app_theme.dart';
 import '../../shared/widgets/emon_top_bar.dart';
 import '../../shared/widgets/top_notification_banner.dart';
@@ -11,7 +12,7 @@ import '../../shared/widgets/top_notification_banner.dart';
 /// 섹션 순서: 환자 정보 → 주호소 → KTAS → 활력징후 → 과거력.
 /// 'AI 분석 시작' 버튼은 필수 항목(등록번호·환자명·나이·주호소)이 채워지면 활성화.
 class TriagePage extends StatefulWidget {
-  const TriagePage({super.key});
+  TriagePage({super.key});
 
   @override
   State<TriagePage> createState() => _TriagePageState();
@@ -63,6 +64,22 @@ class _TriagePageState extends State<TriagePage> {
     String two(int v) => v.toString().padLeft(2, '0');
     _arrivalCtrl.text =
         '${now.year}-${two(now.month)}-${two(now.day)} ${two(now.hour)}:${two(now.minute)}';
+
+    // 데모 시연용 — 양정인(MIMIC subject 18230098) 테스트케이스 미리 채움
+    _mrnCtrl.text = '18230098';
+    _nameCtrl.text = '양정인';
+    _ageCtrl.text = '86';
+    _gender = 'female';
+    _complaintCtrl.text = '4시간 전 발생한 흉통. 다중 고위험 기저질환 (만성 HF·ESRD·기왕 MI·Afib·DM).';
+    _ktas = 2;
+    _hrCtrl.text = '98';
+    _sbpCtrl.text = '138';
+    _dbpCtrl.text = '82';
+    _rrCtrl.text = '26';
+    _spo2Ctrl.text = '92';
+    _btCtrl.text = '36.7';
+    _history.addAll(['고혈압', '당뇨', '관상동맥질환', '만성신부전', '심방세동']);
+
     // 필수 항목 입력 변화 → 버튼 활성화 갱신
     _mrnCtrl.addListener(_onChanged);
     _nameCtrl.addListener(_onChanged);
@@ -98,39 +115,66 @@ class _TriagePageState extends State<TriagePage> {
   Future<void> _submit() async {
     if (!_canSubmit || _submitting) return;
     setState(() => _submitting = true);
-    await Future<void>.delayed(const Duration(milliseconds: 600));
-    if (!mounted) return;
-    TopNotificationBanner.show(context,
-        title: '트리아지 등록 완료 (데모)',
-        duration: const Duration(seconds: 2));
-    context.go('/worklist');
+    try {
+      // 실제 백엔드 /triage/submit — encounter 생성 + 1차 AI 권고 트리거.
+      final r = await submitTriage(
+        mrn: _mrnCtrl.text.trim(),
+        name: _nameCtrl.text.trim(),
+        age: int.tryParse(_ageCtrl.text.trim()) ?? 0,
+        gender: _gender,
+        complaint: _complaintCtrl.text.trim(),
+        hr: _hrCtrl.text,
+        sbp: _sbpCtrl.text,
+        dbp: _dbpCtrl.text,
+        rr: _rrCtrl.text,
+        spo2: _spo2Ctrl.text,
+        bt: _btCtrl.text,
+        history: _history,
+      );
+      if (!mounted) return;
+      TopNotificationBanner.show(context,
+          title: '트리아지 등록 완료',
+          body: '$_nameText — AI 분석을 시작합니다',
+          duration: Duration(seconds: 2));
+      // AI 분석 페이지로 이동 (encounter_id 기준)
+      context.go('/patient/${r.encounterId}');
+    } catch (e) {
+      if (!mounted) return;
+      setState(() => _submitting = false);
+      TopNotificationBanner.show(context,
+          title: '트리아지 등록 실패',
+          body: '백엔드 연결을 확인하세요 ($e)',
+          duration: Duration(seconds: 3));
+    }
   }
+
+  String get _nameText => _nameCtrl.text.trim();
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: AppColors.slate50,
-      appBar: const EmonTopBar(current: 'triage'),
+      appBar: EmonTopBar(current: 'triage'),
       body: SingleChildScrollView(
-        padding: const EdgeInsets.all(16),
+        padding: EdgeInsets.all(16),
         child: Center(
           child: ConstrainedBox(
-            constraints: const BoxConstraints(maxWidth: 560),
+            constraints: BoxConstraints(maxWidth: 560),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
                 _buildPatientSection(),
-                const SizedBox(height: 16),
+                SizedBox(height: 16),
                 _buildComplaintSection(),
-                const SizedBox(height: 16),
+                SizedBox(height: 16),
                 _buildKtasSection(),
-                const SizedBox(height: 16),
+                SizedBox(height: 16),
                 _buildVitalsSection(),
-                const SizedBox(height: 16),
+                SizedBox(height: 16),
                 _buildHistorySection(),
-                const SizedBox(height: 20),
+                SizedBox(height: 20),
                 _buildSubmitButton(),
-                const SizedBox(height: 16),
+                SizedBox(height: 16),
               ],
             ),
           ),
@@ -153,13 +197,13 @@ class _TriagePageState extends State<TriagePage> {
             hint: '예) 1000123',
             keyboardType: TextInputType.text,
           ),
-          const SizedBox(height: 14),
+          SizedBox(height: 14),
           _LabeledField(
             label: '환자명',
             controller: _nameCtrl,
             hint: '예) 홍길동',
           ),
-          const SizedBox(height: 14),
+          SizedBox(height: 14),
           Row(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
@@ -169,18 +213,18 @@ class _TriagePageState extends State<TriagePage> {
                   controller: _ageCtrl,
                   hint: '세',
                   keyboardType:
-                      const TextInputType.numberWithOptions(decimal: false),
+                      TextInputType.numberWithOptions(decimal: false),
                   inputFormatters: [FilteringTextInputFormatter.digitsOnly],
                   suffix: '세',
                 ),
               ),
-              const SizedBox(width: 12),
+              SizedBox(width: 12),
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    const _FieldLabel('성별'),
-                    const SizedBox(height: 6),
+                    _FieldLabel('성별'),
+                    SizedBox(height: 6),
                     _GenderToggle(
                       value: _gender,
                       onChanged: (g) => setState(() => _gender = g),
@@ -190,7 +234,7 @@ class _TriagePageState extends State<TriagePage> {
               ),
             ],
           ),
-          const SizedBox(height: 14),
+          SizedBox(height: 14),
           _LabeledField(
             label: '내원 일시',
             controller: _arrivalCtrl,
@@ -233,11 +277,11 @@ class _TriagePageState extends State<TriagePage> {
                   selected: _ktas == k,
                   onTap: () => setState(() => _ktas = k),
                 )),
-                if (k < 5) const SizedBox(width: 8),
+                if (k < 5) SizedBox(width: 8),
               ],
             ],
           ),
-          const SizedBox(height: 12),
+          SizedBox(height: 12),
           Row(
             children: [
               Container(
@@ -248,10 +292,10 @@ class _TriagePageState extends State<TriagePage> {
                   borderRadius: BorderRadius.circular(3),
                 ),
               ),
-              const SizedBox(width: 8),
+              SizedBox(width: 8),
               Text(
                 '선택: Level $_ktas · ${meta.label}',
-                style: const TextStyle(
+                style: TextStyle(
                   fontSize: 13,
                   fontWeight: FontWeight.bold,
                   color: AppColors.slate700,
@@ -272,7 +316,7 @@ class _TriagePageState extends State<TriagePage> {
       child: LayoutBuilder(
         builder: (context, constraints) {
           // 2열 그리드 — 화면 폭에 따라 칸 너비 계산.
-          const gap = 12.0;
+          final gap = 12.0;
           final colW = (constraints.maxWidth - gap) / 2;
           Widget cell(Widget child) =>
               SizedBox(width: colW, child: child);
@@ -285,7 +329,7 @@ class _TriagePageState extends State<TriagePage> {
                 controller: _hrCtrl,
                 hint: '회/분',
                 keyboardType:
-                    const TextInputType.numberWithOptions(decimal: false),
+                    TextInputType.numberWithOptions(decimal: false),
                 inputFormatters: [FilteringTextInputFormatter.digitsOnly],
                 suffix: 'bpm',
               )),
@@ -294,7 +338,7 @@ class _TriagePageState extends State<TriagePage> {
                 controller: _sbpCtrl,
                 hint: '수축기 혈압',
                 keyboardType:
-                    const TextInputType.numberWithOptions(decimal: false),
+                    TextInputType.numberWithOptions(decimal: false),
                 inputFormatters: [FilteringTextInputFormatter.digitsOnly],
                 suffix: 'mmHg',
               )),
@@ -303,7 +347,7 @@ class _TriagePageState extends State<TriagePage> {
                 controller: _dbpCtrl,
                 hint: '이완기 혈압',
                 keyboardType:
-                    const TextInputType.numberWithOptions(decimal: false),
+                    TextInputType.numberWithOptions(decimal: false),
                 inputFormatters: [FilteringTextInputFormatter.digitsOnly],
                 suffix: 'mmHg',
               )),
@@ -312,7 +356,7 @@ class _TriagePageState extends State<TriagePage> {
                 controller: _rrCtrl,
                 hint: '회/분',
                 keyboardType:
-                    const TextInputType.numberWithOptions(decimal: false),
+                    TextInputType.numberWithOptions(decimal: false),
                 inputFormatters: [FilteringTextInputFormatter.digitsOnly],
                 suffix: '/min',
               )),
@@ -321,7 +365,7 @@ class _TriagePageState extends State<TriagePage> {
                 controller: _spo2Ctrl,
                 hint: '0~100',
                 keyboardType:
-                    const TextInputType.numberWithOptions(decimal: false),
+                    TextInputType.numberWithOptions(decimal: false),
                 inputFormatters: [FilteringTextInputFormatter.digitsOnly],
                 suffix: '%',
               )),
@@ -330,7 +374,7 @@ class _TriagePageState extends State<TriagePage> {
                 controller: _btCtrl,
                 hint: '예) 36.5',
                 keyboardType:
-                    const TextInputType.numberWithOptions(decimal: true),
+                    TextInputType.numberWithOptions(decimal: true),
                 inputFormatters: [
                   FilteringTextInputFormatter.allow(RegExp(r'[0-9.]')),
                 ],
@@ -341,7 +385,7 @@ class _TriagePageState extends State<TriagePage> {
                 controller: _painCtrl,
                 hint: '0~10',
                 keyboardType:
-                    const TextInputType.numberWithOptions(decimal: false),
+                    TextInputType.numberWithOptions(decimal: false),
                 inputFormatters: [FilteringTextInputFormatter.digitsOnly],
                 suffix: '/10',
               )),
@@ -393,7 +437,7 @@ class _TriagePageState extends State<TriagePage> {
           ),
         ),
         child: _submitting
-            ? const SizedBox(
+            ? SizedBox(
                 width: 22,
                 height: 22,
                 child: CircularProgressIndicator(
@@ -401,7 +445,7 @@ class _TriagePageState extends State<TriagePage> {
                   valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
                 ),
               )
-            : const Text(
+            : Text(
                 'AI 분석 시작',
                 style: TextStyle(
                   fontSize: 16,
@@ -418,7 +462,7 @@ class _Section extends StatelessWidget {
   final String title;
   final String? subtitle;
   final Widget child;
-  const _Section({
+  _Section({
     required this.title,
     this.subtitle,
     required this.child,
@@ -428,9 +472,9 @@ class _Section extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       width: double.infinity,
-      padding: const EdgeInsets.all(16),
+      padding: EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: AppColors.surface,
         border: Border.all(color: AppColors.slate200),
         borderRadius: BorderRadius.circular(12),
       ),
@@ -443,18 +487,18 @@ class _Section extends StatelessWidget {
             children: [
               Text(
                 title,
-                style: const TextStyle(
+                style: TextStyle(
                   fontSize: 14,
                   fontWeight: FontWeight.bold,
                   color: AppColors.slate900,
                 ),
               ),
               if (subtitle != null) ...[
-                const SizedBox(width: 8),
+                SizedBox(width: 8),
                 Expanded(
                   child: Text(
                     subtitle!,
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontSize: 11,
                       color: AppColors.slate400,
                     ),
@@ -464,7 +508,7 @@ class _Section extends StatelessWidget {
               ],
             ],
           ),
-          const SizedBox(height: 14),
+          SizedBox(height: 14),
           child,
         ],
       ),
@@ -475,13 +519,13 @@ class _Section extends StatelessWidget {
 /// 입력 위 13-15 bold slate800 라벨.
 class _FieldLabel extends StatelessWidget {
   final String text;
-  const _FieldLabel(this.text);
+  _FieldLabel(this.text);
 
   @override
   Widget build(BuildContext context) {
     return Text(
       text,
-      style: const TextStyle(
+      style: TextStyle(
         fontSize: 13,
         fontWeight: FontWeight.bold,
         color: AppColors.slate800,
@@ -501,7 +545,7 @@ class _LabeledField extends StatelessWidget {
   final bool readOnly;
   final String? suffix;
 
-  const _LabeledField({
+  _LabeledField({
     required this.label,
     required this.controller,
     this.hint,
@@ -523,14 +567,14 @@ class _LabeledField extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         _FieldLabel(label),
-        const SizedBox(height: 6),
+        SizedBox(height: 6),
         TextField(
           controller: controller,
           keyboardType: keyboardType,
           inputFormatters: inputFormatters,
           maxLines: maxLines,
           readOnly: readOnly,
-          style: const TextStyle(
+          style: TextStyle(
             fontSize: 14,
             color: AppColors.slate900,
           ),
@@ -539,18 +583,18 @@ class _LabeledField extends StatelessWidget {
             filled: true,
             fillColor: readOnly ? AppColors.slate50 : Colors.white,
             hintText: hint,
-            hintStyle: const TextStyle(
+            hintStyle: TextStyle(
               fontSize: 14,
               color: AppColors.slate400,
             ),
             suffixText: suffix,
-            suffixStyle: const TextStyle(
+            suffixStyle: TextStyle(
               fontSize: 12,
               color: AppColors.slate400,
               fontWeight: FontWeight.w600,
             ),
             contentPadding:
-                const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+                EdgeInsets.symmetric(horizontal: 12, vertical: 12),
             enabledBorder: border(AppColors.slate200),
             focusedBorder: border(AppColors.brand500),
             border: border(AppColors.slate200),
@@ -565,7 +609,7 @@ class _LabeledField extends StatelessWidget {
 class _GenderToggle extends StatelessWidget {
   final String value; // 'male' | 'female'
   final ValueChanged<String> onChanged;
-  const _GenderToggle({required this.value, required this.onChanged});
+  _GenderToggle({required this.value, required this.onChanged});
 
   @override
   Widget build(BuildContext context) {
@@ -575,7 +619,7 @@ class _GenderToggle extends StatelessWidget {
         border: Border.all(color: AppColors.slate200),
         borderRadius: BorderRadius.circular(10),
       ),
-      padding: const EdgeInsets.all(3),
+      padding: EdgeInsets.all(3),
       child: Row(
         children: [
           Expanded(child: _seg('남', 'male')),
@@ -591,7 +635,7 @@ class _GenderToggle extends StatelessWidget {
       onTap: () => onChanged(key),
       behavior: HitTestBehavior.opaque,
       child: AnimatedContainer(
-        duration: const Duration(milliseconds: 120),
+        duration: Duration(milliseconds: 120),
         height: 38,
         alignment: Alignment.center,
         decoration: BoxDecoration(
@@ -617,7 +661,7 @@ class _KtasButton extends StatelessWidget {
   final int level;
   final bool selected;
   final VoidCallback onTap;
-  const _KtasButton({
+  _KtasButton({
     required this.level,
     required this.selected,
     required this.onTap,
@@ -630,8 +674,8 @@ class _KtasButton extends StatelessWidget {
       onTap: onTap,
       behavior: HitTestBehavior.opaque,
       child: AnimatedContainer(
-        duration: const Duration(milliseconds: 120),
-        padding: const EdgeInsets.symmetric(vertical: 10),
+        duration: Duration(milliseconds: 120),
+        padding: EdgeInsets.symmetric(vertical: 10),
         decoration: BoxDecoration(
           color: selected ? meta.bg : AppColors.slate50,
           border: Border.all(
@@ -650,7 +694,7 @@ class _KtasButton extends StatelessWidget {
                 color: selected ? Colors.white : AppColors.slate700,
               ),
             ),
-            const SizedBox(height: 2),
+            SizedBox(height: 2),
             Text(
               meta.label,
               maxLines: 1,
@@ -673,7 +717,7 @@ class _HistoryChip extends StatelessWidget {
   final String label;
   final bool selected;
   final VoidCallback onTap;
-  const _HistoryChip({
+  _HistoryChip({
     required this.label,
     required this.selected,
     required this.onTap,
@@ -685,8 +729,8 @@ class _HistoryChip extends StatelessWidget {
       onTap: onTap,
       behavior: HitTestBehavior.opaque,
       child: AnimatedContainer(
-        duration: const Duration(milliseconds: 120),
-        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+        duration: Duration(milliseconds: 120),
+        padding: EdgeInsets.symmetric(horizontal: 14, vertical: 8),
         decoration: BoxDecoration(
           color: selected ? AppColors.brand600 : AppColors.slate50,
           border: Border.all(

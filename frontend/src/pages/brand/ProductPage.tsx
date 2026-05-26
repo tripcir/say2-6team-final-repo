@@ -1,71 +1,156 @@
-import { useState } from "react";
 import { Link } from "react-router-dom";
 import {
-  Activity, FlaskConical, Image as ImageIcon, Sparkles,
-  ArrowUpRight, ChevronRight,
+  Activity, Image as ImageIcon, Sparkles,
+  ArrowUpRight, ChevronRight, Check, Monitor,
+  BellRing, FileText, Zap, Layers,
 } from "lucide-react";
 import { BrandShell } from "../../components/brand/BrandShell";
 import { Reveal } from "../../components/brand/anim/Reveal";
 import { cn } from "../../lib/cn";
 
-type ModalKey = "ecg" | "cxr" | "lab";
-
-interface ModalSpec {
-  key: ModalKey;
-  num: string;
-  title: string;          // 영문 제품명
-  ko: string;             // 한글 부제
-  shortDesc: string;      // 좌측 리스트용 짧은 설명
-  longDesc: string;       // 우측 미리보기용 긴 설명
-  link: string;
-  // 우측 미리보기 일러스트 (JSX)
-  preview: () => JSX.Element;
-  icon: typeof Activity;
-}
-
-const MODALS: ModalSpec[] = [
-  {
-    key: "ecg",
-    num: "01",
-    title: "EMON ECG",
-    ko: "심전도 12-Lead AI 판독",
-    shortDesc: "STEMI · 부정맥 · 전도 장애 분류",
-    longDesc: "12-Lead 심전도를 PyTorch 기반 딥러닝 모델로 자동 판독합니다. ST 상승, 부정맥, 전도 장애 등 응급 심혈관 이벤트를 평균 2초 내에 감지하고 신뢰도와 함께 제공합니다.",
-    link: "/product/ecg",
-    preview: EcgPreview,
-    icon: Activity,
-  },
-  {
-    key: "cxr",
-    num: "02",
-    title: "EMON CXR",
-    ko: "흉부 X-ray AI 판독",
-    shortDesc: "폐 침윤 · 심비대 · 기흉 분류",
-    longDesc: "흉부 X-ray 영상의 주요 비정상 소견 여부와 위치 정보를 ONNX GPU 추론(~3초)으로 제공해 의료진의 판독을 보조합니다. AP/PA 모두 지원.",
-    link: "/product/cxr",
-    preview: CxrPreview,
-    icon: ImageIcon,
-  },
-  {
-    key: "lab",
-    num: "03",
-    title: "EMON LAB",
-    ko: "혈액 검사 AI 위험도 평가",
-    shortDesc: "Troponin · CK-MB · WBC 통합 해석",
-    longDesc: "Troponin · CK-MB · WBC · CRP 등 응급 검사 항목을 XGBoost 기반 모델로 통합 해석. 시계열 트렌드와 함께 급성 심근경색 · 패혈증 · 신기능 저하 위험을 평가합니다.",
-    link: "/product/lab",
-    preview: LabPreview,
-    icon: FlaskConical,
-  },
-];
-
 export default function ProductPage() {
   return (
     <BrandShell>
       <PageHero />
-      <SolutionExplorer />
+      <ProductFormats />
+      <CoreFlow />
       <BottomCTA />
     </BrandShell>
+  );
+}
+
+/* ───────────────────────────────────────────────────────
+   CORE WORKFLOW — 시스템의 핵심 두 페이지 (가장 중요)
+   ① 병렬 AI 판독 검사결과   ② AI 종합소견 생성
+   ─────────────────────────────────────────────────────── */
+interface FlowSpec {
+  step: string;
+  badge: string;
+  title: string;
+  tagline: string;
+  desc: string;
+  highlights: string[];
+  image: string;
+  alt: string;
+  bigImage?: boolean;   // true면 이 블록의 이미지 영역만 크게
+}
+
+const FLOWS: FlowSpec[] = [
+  {
+    step: "STEP 1",
+    badge: "AI READ · 검사 결과",
+    title: "AI 판독 검사결과",
+    tagline: "ECG · CXR · LAB 3개 모달이 동시에 추론, 한 화면에 통합 표시",
+    desc:
+      "환자가 도착하면 3개 AI 모달이 즉시 병렬로 동작합니다. ECG(Mamba S6) · CXR(DenseNet + U-Net) · LAB(룰엔진 + XGBoost)가 동시 추론하고, 의료진은 한 화면에서 모든 판독 결과를 신뢰도(%)와 함께 확인합니다.",
+    highlights: [
+      "3개 모달 병렬 추론 — 각각 독립 ECS 마이크로서비스로 격리 배포",
+      "AI 판단결과 + 신뢰도(%) + Critical/Urgent 위험도 자동 표시",
+      "CXR PACS 뷰어 · 12-Lead 라이브 차트 · 룰엔진 + 6시간 예측 통합 뷰",
+    ],
+    image: "/flow-ai-result.png",
+    alt: "EMON Med — AI 판독 검사결과 (ECG·CXR·LAB 병렬 분석)",
+    bigImage: true,
+  },
+  {
+    step: "STEP 2",
+    badge: "DIAGNOSTIC REPORT · 소견서",
+    title: "AI 종합소견 생성",
+    tagline: "검사 결과 + RAG 유사사례 → 한국어 소견서 초안 자동 작성",
+    desc:
+      "3개 모달의 판독 결과와 환자 기저질환·활력징후를 종합해 Bedrock Claude가 한국어 소견서 초안을 자동 작성합니다. ChromaDB RAG가 MIMIC-IV 임상노트에서 유사사례를 검색해 근거 자료로 제공하고, 의사는 검토 후 한 번의 클릭으로 EMR로 전송합니다.",
+    highlights: [
+      "Bedrock Claude (Haiku 4.5 / Sonnet 4.6) — 한국어 소견서 narrative 생성",
+      "ChromaDB RAG — MIMIC-IV 49,743건 유사사례 검색해 근거 자료로 첨부",
+      "2-step 검토 플로우: 소견 검토 → 소견 확정 · EMR 전송 (FHIR DiagnosticReport)",
+    ],
+    image: "/flow-ai-report.png",
+    alt: "EMON Med — AI 종합소견 생성 (소견서 초안 + RAG 근거자료)",
+    bigImage: true,
+  },
+];
+
+function CoreFlow() {
+  return (
+    <section className="py-28 border-b border-vuno-divider bg-vuno-bg">
+      <div className="max-w-[1400px] mx-auto px-6">
+        <Reveal className="mb-16 text-center">
+          <div className="inline-flex items-center gap-2 px-4 py-2 border border-vuno-cyan/40 text-vuno-cyan text-sm md:text-base font-bold uppercase tracking-[0.2em] mb-5">
+            <Sparkles className="h-4 w-4" />
+            Core Workflow · 핵심 기능
+          </div>
+          <h2 className="text-4xl md:text-6xl font-bold text-white leading-tight">
+            병렬 AI 분석부터<br />
+            <span className="text-vuno-cyan">종합 소견서 생성까지</span>
+          </h2>
+          <p className="mt-6 text-xl md:text-2xl text-vuno-muted max-w-3xl mx-auto leading-relaxed">
+            환자가 도착한 순간부터 의사가 소견서를 확정하기까지 — EMON Med®의 가장 중요한 두 단계입니다.
+          </p>
+        </Reveal>
+
+        <div className="space-y-20 lg:space-y-28">
+          {FLOWS.map((f, i) => (
+            <FlowBlock key={f.title} spec={f} flip={i % 2 === 1} />
+          ))}
+        </div>
+      </div>
+    </section>
+  );
+}
+
+function FlowBlock({ spec, flip }: { spec: FlowSpec; flip: boolean }) {
+  return (
+    <Reveal>
+      <div className={cn(
+        "grid grid-cols-1 gap-10 lg:gap-14 items-center",
+        // flip(이미지가 우측)이면 큰 트랙을 2번째로, 아니면 1번째로.
+        // bigImage가 true면 이미지 트랙을 1.7fr, 아니면 1.3fr.
+        !flip && !spec.bigImage && "lg:grid-cols-[1.3fr_1fr]",
+        !flip && spec.bigImage  && "lg:grid-cols-[1.7fr_1fr]",
+        flip  && !spec.bigImage && "lg:grid-cols-[1fr_1.3fr]",
+        flip  && spec.bigImage  && "lg:grid-cols-[1fr_1.7fr]",
+      )}>
+        {/* 스크린샷 (두 블록 동일 비율로 고정 — STEP 1/2 시각 크기 일치) */}
+        <div className={cn("min-w-0", flip ? "lg:order-2" : "lg:order-1")}>
+          <div className="rounded-xl overflow-hidden border border-vuno-border shadow-2xl aspect-[3006/1720] bg-vuno-bg">
+            <img
+              src={spec.image}
+              alt={spec.alt}
+              loading="lazy"
+              className="w-full h-full object-cover object-top block"
+            />
+          </div>
+        </div>
+        {/* 텍스트 */}
+        <div className={cn("min-w-0", flip ? "lg:order-1" : "lg:order-2")}>
+          <div className="text-base md:text-lg font-bold text-vuno-cyan font-numeric tracking-[0.25em] mb-3">
+            {spec.step}
+          </div>
+          <div className="inline-flex items-center gap-2 px-3.5 py-1.5 border border-vuno-cyan/40 text-vuno-cyan text-sm md:text-base font-bold uppercase tracking-[0.15em] mb-4">
+            {spec.badge}
+          </div>
+          <h3 className="text-4xl md:text-5xl font-bold text-white mb-4">
+            {spec.title}
+          </h3>
+          <div className="text-xl md:text-2xl text-vuno-cyan/90 font-medium mb-5">
+            {spec.tagline}
+          </div>
+          <p className="text-lg md:text-xl text-vuno-muted leading-relaxed mb-7 max-w-2xl">
+            {spec.desc}
+          </p>
+          <ul className="space-y-3.5">
+            {spec.highlights.map((h) => (
+              <li key={h} className="flex items-start gap-3">
+                <span className="mt-0.5 h-7 w-7 flex-shrink-0 grid place-items-center bg-vuno-cyan/10 border border-vuno-cyan/30">
+                  <Check className="h-4 w-4 text-vuno-cyan" strokeWidth={3} />
+                </span>
+                <span className="text-base md:text-lg text-white/90 leading-relaxed">{h}</span>
+              </li>
+            ))}
+          </ul>
+        </div>
+      </div>
+    </Reveal>
   );
 }
 
@@ -74,243 +159,229 @@ function PageHero() {
     <section className="border-b border-vuno-divider bg-vuno-bg">
       <div className="max-w-[1400px] mx-auto px-6 py-20 md:py-28">
         <Reveal>
-          <div className="inline-flex items-center gap-2 px-3 py-1.5 border border-vuno-cyan/40 text-vuno-cyan text-xs font-bold uppercase tracking-[0.2em] mb-6">
-            Product
+          <div className="inline-flex items-center gap-2 px-5 py-2.5 border border-vuno-cyan/40 text-vuno-cyan text-base md:text-lg font-bold uppercase tracking-[0.2em] mb-7">
+            Product · 응급실 진단보조 AI
           </div>
-          <h1 className="text-4xl md:text-6xl font-bold leading-tight text-white max-w-3xl">
-            응급실 멀티모달 AI<br />
-            <span className="text-vuno-cyan">진단보조 솔루션</span>
+          <h1 className="text-5xl md:text-7xl font-bold leading-tight text-white max-w-4xl">
+            환자가 도착하면,<br />
+            <span className="text-vuno-cyan">AI가 가장 먼저 읽습니다</span>
           </h1>
-          <p className="mt-6 text-lg text-vuno-muted leading-relaxed max-w-2xl">
-            ECG·CXR·LAB을 동시에 분석하고, RAG로 유사 사례를 검색해 의사에게
-            1차 소견을 정리합니다. 최종 결정은 항상 의사.
+          <p className="mt-8 text-xl md:text-2xl text-vuno-muted leading-relaxed max-w-3xl">
+            <b className="text-white">EMON Med®</b>는 심전도·흉부 X-ray·혈액검사를 <b className="text-white">동시에 분석</b>하고,
+            과거 유사 환자 사례까지 찾아 의사에게 <b className="text-white">종합 소견서 초안</b>을 정리해 줍니다.
+            의사는 검토하고 확정만 — <b className="text-white">최종 진단과 결정은 언제나 의사</b>의 몫입니다.
           </p>
-        </Reveal>
-      </div>
-    </section>
-  );
-}
-
-function SolutionExplorer() {
-  const [active, setActive] = useState<ModalKey>("ecg");
-  const current = MODALS.find((m) => m.key === active)!;
-
-  return (
-    <section className="py-24 bg-vuno-bg">
-      <div className="max-w-[1400px] mx-auto px-6">
-        {/* 카테고리 헤더 */}
-        <Reveal className="mb-12">
-          <div className="inline-flex items-center gap-2 px-3 py-1 border border-vuno-cyan/40 text-vuno-cyan text-xs font-bold uppercase tracking-[0.2em] mb-4">
-            <Sparkles className="h-3.5 w-3.5" />
-            응급보조 AI
+          {/* 3단계 직관 흐름 */}
+          <div className="mt-9 flex flex-wrap gap-3">
+            {[
+              "① ECG · CXR · LAB 동시 분석",
+              "② 유사 환자 사례 검색 (RAG)",
+              "③ 소견서 초안 자동 생성",
+            ].map((t) => (
+              <span
+                key={t}
+                className="inline-flex items-center px-5 py-3 rounded-md border border-vuno-border bg-vuno-surface text-base md:text-lg font-medium text-white/90"
+              >
+                {t}
+              </span>
+            ))}
           </div>
-          <h2 className="text-3xl md:text-5xl font-bold text-white leading-tight">
-            EMON Modality<br />
-            <span className="text-vuno-cyan">3종 솔루션</span>
-          </h2>
-          <p className="mt-5 text-lg text-vuno-muted max-w-2xl">
-            모달을 선택하면 우측에 미리보기가 나타나고, 클릭하면 상세 페이지로 이동합니다.
-          </p>
         </Reveal>
-
-        {/* 좌측 리스트 + 우측 미리보기 */}
-        <div className="grid grid-cols-1 lg:grid-cols-[280px_1fr] gap-8 lg:gap-12">
-          {/* 좌측 모달 리스트 */}
-          <Reveal>
-            <nav className="space-y-1 lg:sticky lg:top-32">
-              {MODALS.map((m) => {
-                const isActive = m.key === active;
-                return (
-                  <button
-                    key={m.key}
-                    onMouseEnter={() => setActive(m.key)}
-                    onClick={() => setActive(m.key)}
-                    className={cn(
-                      "w-full flex items-center gap-3 px-4 py-4 text-left border-l-2 transition-all",
-                      isActive
-                        ? "border-vuno-cyan bg-vuno-surface text-vuno-cyan"
-                        : "border-transparent text-white hover:text-vuno-cyan hover:bg-vuno-surface/30",
-                    )}
-                  >
-                    <m.icon className={cn("h-5 w-5 flex-shrink-0", isActive ? "text-vuno-cyan" : "text-vuno-muted")} />
-                    <div className="flex-1">
-                      <div className="text-lg font-bold">{m.title}</div>
-                      <div className={cn("text-xs mt-0.5", isActive ? "text-vuno-cyan/70" : "text-vuno-muted")}>
-                        {m.ko}
-                      </div>
-                    </div>
-                    {isActive && <ChevronRight className="h-4 w-4" />}
-                  </button>
-                );
-              })}
-            </nav>
-          </Reveal>
-
-          {/* 우측 미리보기 */}
-          <div className="min-h-[500px]">
-            <Reveal key={active}>
-              <div className="border border-vuno-border bg-vuno-surface overflow-hidden">
-                {/* 미리보기 일러스트 */}
-                <div className="bg-vuno-bg p-8 border-b border-vuno-border">
-                  {current.preview()}
-                </div>
-
-                {/* 설명 */}
-                <div className="p-8">
-                  <div className="text-xs font-bold text-vuno-cyan font-numeric tracking-[0.2em] mb-3">
-                    {current.num}
-                  </div>
-                  <h3 className="text-2xl md:text-3xl font-bold text-white mb-2">
-                    {current.title}<span className="text-vuno-cyan">®</span>
-                  </h3>
-                  <div className="text-base text-vuno-cyan/80 mb-5">{current.ko}</div>
-                  <p className="text-base text-vuno-muted leading-relaxed mb-8">
-                    {current.longDesc}
-                  </p>
-
-                  <Link
-                    to={current.link}
-                    className="inline-flex items-center gap-2 h-12 px-6 font-bold bg-vuno-cyan text-vuno-bg hover:bg-vuno-cyanGlow transition-colors tracking-wider uppercase text-sm"
-                  >
-                    {current.title} 자세히 보기
-                    <ArrowUpRight className="h-4 w-4" />
-                  </Link>
-                </div>
-              </div>
-            </Reveal>
-          </div>
-        </div>
       </div>
     </section>
   );
 }
 
 /* ───────────────────────────────────────────────────────
-   각 모달 우측 미리보기 (큰 일러스트)
+   웹 / 앱 — 두 가지 형태로 제공되는 EMON (VUNO 스타일 교차 블록)
    ─────────────────────────────────────────────────────── */
-function EcgPreview() {
+interface FormatSpec {
+  badge: string;
+  name: string;
+  tagline: string;
+  desc: string;
+  features: { icon: typeof Activity; text: string }[];
+  cta: { label: string; to: string };
+  visual: () => JSX.Element;
+}
+
+const FORMATS: FormatSpec[] = [
+  {
+    badge: "WEB · 의사 콘솔",
+    name: "EMON 웹 콘솔",
+    tagline: "응급실 통합 모니터 — 한 화면에서 모든 환자",
+    desc: "데스크·대형 모니터에 상시 띄워두는 관제 화면입니다. 들어오는 환자와 AI 분석 현황을 실시간으로 한눈에 보고, 소견서 작성까지 끊김 없이 이어집니다.",
+    features: [
+      { icon: Layers, text: "환자 워크리스트 · 실시간 AI 분석 현황을 한눈에" },
+      { icon: Sparkles, text: "ECG·CXR·LAB 판독 + RAG 유사사례를 통합 뷰로" },
+      { icon: FileText, text: "소견서 생성 → 검토 → 확정(EMR 전송)까지 원스톱" },
+      { icon: Zap, text: "WebSocket 실시간 갱신 — 새 권고·결과 즉시 반영" },
+    ],
+    cta: { label: "웹 데모 보기", to: "/demo" },
+    visual: WebConsoleMock,
+  },
+  {
+    badge: "APP · 의사 모바일",
+    name: "EMON 모바일 앱",
+    tagline: "이동 중에도 놓치지 않는 응급 알림",
+    desc: "회진·처치로 자리를 비운 의사의 손안으로. Critical 환자와 소견서 확정 대기를 푸시로 즉시 알리고, 폰에서 바로 검토·확정할 수 있습니다.",
+    features: [
+      { icon: BellRing, text: "Critical 환자 · 소견서 생성 완료를 즉시 푸시 알림" },
+      { icon: ImageIcon, text: "환자 상세 · 검사 결과지를 모바일에 최적화" },
+      { icon: FileText, text: "소견 검토 · 확정(EMR 전송)을 폰에서 바로" },
+      { icon: Monitor, text: "웹과 동일한 데이터 · 동일한 워크플로우" },
+    ],
+    cta: { label: "iOS · Android 지원", to: "http://localhost:8090/" },
+    visual: AppMock,
+  },
+];
+
+function ProductFormats() {
   return (
-    <div className="relative">
-      <div className="text-[10px] font-bold text-vuno-cyan tracking-[0.2em] uppercase mb-3 flex items-center gap-2">
-        <span className="px-2 py-0.5 bg-red-500 text-white">LVSD Detected</span>
-        <span className="text-vuno-muted">12-Lead · 25 mm/s</span>
-      </div>
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-2 font-numeric">
-        {["I", "aVR", "V1", "V4", "II", "aVL", "V2", "V5", "III", "aVF", "V3", "V6"].map((lead) => (
-          <div key={lead} className="flex items-center gap-3">
-            <span className="w-8 text-xs text-vuno-cyan font-bold">{lead}</span>
-            <svg viewBox="0 0 200 20" className="flex-1 h-5">
-              <path
-                d={lead === "V2" || lead === "V3" || lead === "V4"
-                  ? "M0,10 L20,10 L25,2 L30,16 L35,1 L45,10 L70,10 L75,2 L80,16 L85,1 L95,10 L120,10 L125,2 L130,16 L135,1 L145,10 L170,10 L175,2 L180,16 L185,1 L195,10 L200,10"
-                  : "M0,10 L20,10 L25,6 L30,14 L35,4 L45,10 L70,10 L75,6 L80,14 L85,4 L95,10 L120,10 L125,6 L130,14 L135,4 L145,10 L170,10 L175,6 L180,14 L185,4 L195,10 L200,10"}
-                stroke={lead === "V2" || lead === "V3" || lead === "V4" ? "#EF4444" : "#21D4D4"}
-                strokeWidth="0.7" fill="none"
-              />
-            </svg>
+    <section className="py-24 border-b border-vuno-divider bg-vuno-bg">
+      <div className="max-w-[1400px] mx-auto px-6">
+        <Reveal className="mb-16 text-center">
+          <div className="inline-flex items-center gap-2 px-4 py-1.5 border border-vuno-cyan/40 text-vuno-cyan text-sm md:text-base font-bold uppercase tracking-[0.2em] mb-5">
+            <Layers className="h-4 w-4" />
+            제품 구성
           </div>
-        ))}
+          <h2 className="text-4xl md:text-6xl font-bold text-white leading-tight">
+            하나의 AI,<br className="md:hidden" />
+            <span className="text-vuno-cyan"> 두 가지 화면</span>
+          </h2>
+          <p className="mt-6 text-xl md:text-2xl text-vuno-muted max-w-3xl mx-auto leading-relaxed">
+            응급실 데스크의 <b className="text-white">웹 콘솔</b>과 의사의 <b className="text-white">모바일 앱</b>.
+            같은 데이터, 같은 워크플로우를 두 가지 형태로 제공합니다.
+          </p>
+        </Reveal>
+
+        <div className="space-y-20 lg:space-y-28">
+          {FORMATS.map((f, i) => (
+            <FormatBlock key={f.name} spec={f} flip={i % 2 === 1} index={i} />
+          ))}
+        </div>
       </div>
-      <div className="grid grid-cols-4 gap-2 mt-6">
-        <PreviewStat label="HR" value="80" unit="bpm" />
-        <PreviewStat label="PR" value="164" unit="ms" />
-        <PreviewStat label="QRS" value="86" unit="ms" />
-        <PreviewStat label="QTc" value="394" unit="ms" />
+    </section>
+  );
+}
+
+function FormatBlock({ spec, flip, index }: { spec: FormatSpec; flip: boolean; index: number }) {
+  return (
+    <Reveal>
+      <div className={cn(
+        "grid grid-cols-1 lg:grid-cols-2 gap-10 lg:gap-16 items-center",
+      )}>
+        {/* 비주얼 */}
+        <div className={cn("min-w-0", flip ? "lg:order-2" : "lg:order-1")}>
+          {spec.visual()}
+        </div>
+
+        {/* 텍스트 */}
+        <div className={cn("min-w-0", flip ? "lg:order-1" : "lg:order-2")}>
+          <div className="text-sm md:text-base font-bold text-vuno-cyan font-numeric tracking-[0.25em] mb-3">
+            0{index + 1}
+          </div>
+          <div className="inline-flex items-center gap-2 px-3.5 py-1.5 border border-vuno-cyan/40 text-vuno-cyan text-sm font-bold uppercase tracking-[0.15em] mb-4">
+            {spec.badge}
+          </div>
+          <h3 className="text-4xl md:text-5xl font-bold text-white mb-4">
+            {spec.name}
+          </h3>
+          <div className="text-xl md:text-2xl text-vuno-cyan/90 font-medium mb-5">{spec.tagline}</div>
+          <p className="text-lg md:text-xl text-vuno-muted leading-relaxed mb-8 max-w-2xl">
+            {spec.desc}
+          </p>
+
+          <ul className="space-y-3.5 mb-9">
+            {spec.features.map((ft) => (
+              <li key={ft.text} className="flex items-start gap-3">
+                <span className="mt-0.5 h-7 w-7 flex-shrink-0 grid place-items-center bg-vuno-cyan/10 border border-vuno-cyan/30">
+                  <Check className="h-4 w-4 text-vuno-cyan" strokeWidth={3} />
+                </span>
+                <span className="text-base md:text-lg text-white/90 leading-relaxed">{ft.text}</span>
+              </li>
+            ))}
+          </ul>
+
+          {/* 외부 URL(앱 데모 등)이면 새 탭으로, 내부 경로면 SPA 라우팅 */}
+          {spec.cta.to.startsWith("http") ? (
+            <a
+              href={spec.cta.to}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center gap-2 h-14 px-8 font-bold bg-vuno-cyan text-vuno-bg hover:bg-vuno-cyanGlow transition-colors tracking-wider uppercase text-base"
+            >
+              {spec.cta.label}
+              <ArrowUpRight className="h-5 w-5" />
+            </a>
+          ) : (
+            <Link
+              to={spec.cta.to}
+              className="inline-flex items-center gap-2 h-14 px-8 font-bold bg-vuno-cyan text-vuno-bg hover:bg-vuno-cyanGlow transition-colors tracking-wider uppercase text-base"
+            >
+              {spec.cta.label}
+              <ArrowUpRight className="h-5 w-5" />
+            </Link>
+          )}
+        </div>
       </div>
+    </Reveal>
+  );
+}
+
+/* 웹 콘솔 미리보기 — 실제 EMON 콘솔 스크린샷 */
+function WebConsoleMock() {
+  return (
+    <div className="border border-vuno-border bg-vuno-surface shadow-2xl rounded-lg overflow-hidden">
+      <img
+        src="/product-web.png"
+        alt="EMON 웹 콘솔 실제 화면 — 환자정보입력·접수 대기열·환자 목록"
+        className="w-full h-auto block"
+        loading="lazy"
+      />
     </div>
   );
 }
 
-function CxrPreview() {
-  return (
-    <div className="relative">
-      <div className="text-[10px] font-bold text-vuno-cyan tracking-[0.2em] uppercase mb-3 flex items-center gap-2">
-        <span className="px-2 py-0.5 bg-red-500 text-white">Abnormal · 89%</span>
-        <span className="text-vuno-muted">PA View · 2400×2400</span>
-      </div>
-      <div className="aspect-[4/3] bg-black border border-vuno-border/40 relative">
-        <svg viewBox="0 0 200 150" className="w-full h-full">
-          {/* 흉곽 */}
-          <ellipse cx="100" cy="75" rx="80" ry="60" fill="#0F172A" stroke="#475569" strokeWidth="0.5" />
-          <ellipse cx="65" cy="75" rx="22" ry="40" fill="#1E293B" stroke="#64748B" strokeWidth="0.4" />
-          <ellipse cx="135" cy="75" rx="22" ry="40" fill="#1E293B" stroke="#64748B" strokeWidth="0.4" />
-          <line x1="100" y1="20" x2="100" y2="130" stroke="#475569" strokeWidth="1" />
-          {/* 갈비뼈 */}
-          {[35, 50, 65, 80, 95, 110].map((y) => (
-            <path key={y} d={`M 30 ${y} Q 100 ${y - 4}, 170 ${y}`} fill="none" stroke="#64748B" strokeWidth="0.3" opacity="0.6" />
-          ))}
-          {/* 히트맵 (이상부위) */}
-          <circle cx="125" cy="82" r="18" fill="url(#cxr-heat)" opacity="0.85" />
-          <defs>
-            <radialGradient id="cxr-heat">
-              <stop offset="0%" stopColor="#EF4444" />
-              <stop offset="40%" stopColor="#F59E0B" />
-              <stop offset="80%" stopColor="#FBBF24" stopOpacity="0.3" />
-              <stop offset="100%" stopColor="#FBBF24" stopOpacity="0" />
-            </radialGradient>
-          </defs>
-          {/* 라벨 */}
-          <text x="118" y="58" fontSize="6" fill="#EF4444" fontWeight="bold">Cons 32%</text>
-        </svg>
-        <div className="absolute top-2 left-2 text-xs font-bold text-vuno-cyan">R</div>
-      </div>
-      <div className="grid grid-cols-3 gap-2 mt-4">
-        <PreviewStat label="Consolidation" value="32" unit="%" warn />
-        <PreviewStat label="Nodule" value="2" unit="cm" warn />
-        <PreviewStat label="Effusion" value="—" unit="" />
-      </div>
-    </div>
-  );
-}
+/* 모바일 앱 미리보기 — 실제 시연 스크린샷 11종을 가로 스크롤 캐러셀로 */
+const APP_SHOTS: [string, string][] = [
+  ["/product-app-1.png", "로그인"],
+  ["/product-app-2.png", "환자 정보 입력"],
+  ["/product-app-3.png", "AI 분석 시작"],
+  ["/product-app-4.png", "AI 분석"],
+  ["/product-app-5.png", "의사 직접 지시"],
+  ["/product-app-6.png", "AI 검사 결과"],
+  ["/product-app-7.png", "소견서 생성"],
+  ["/product-app-8.png", "소견 근거 자료"],
+  ["/product-app-9.png", "운영 모니터링"],
+  ["/product-app-10.png", "환자 목록"],
+  ["/product-app-11.png", "환자 알림 (웹 연동)"],
+];
 
-function LabPreview() {
+function AppMock() {
   return (
-    <div className="relative">
-      <div className="text-[10px] font-bold text-vuno-cyan tracking-[0.2em] uppercase mb-3 flex items-center gap-2">
-        <span className="px-2 py-0.5 bg-red-500 text-white">Acute MI 의심</span>
-        <span className="text-vuno-muted">5-day Trend</span>
-      </div>
-      {/* 시계열 차트 */}
-      <div className="bg-vuno-bg border border-vuno-border/40 p-4 mb-3">
-        <svg viewBox="0 0 300 100" className="w-full h-24">
-          <line x1="20" y1="80" x2="290" y2="80" stroke="#475569" strokeWidth="0.5" />
-          {[20, 40, 60].map((y) => (
-            <line key={y} x1="20" y1={y} x2="290" y2={y} stroke="#334155" strokeWidth="0.3" strokeDasharray="2,2" />
+    <div>
+      <div className="overflow-x-auto pb-3 snap-x snap-mandatory [scrollbar-color:theme(colors.vuno-border)_transparent]">
+        <div className="flex gap-4 w-max px-0.5">
+          {APP_SHOTS.map(([src, cap], i) => (
+            <figure key={src} className="snap-center shrink-0 w-[230px]">
+              {/* 아이폰 프레임 비율(393:852)로 통일 — 소스 해상도가 달라도 동일 크기 */}
+              <img
+                src={src}
+                alt={`EMON 앱 — ${cap}`}
+                loading="lazy"
+                className="w-[230px] aspect-[393/852] object-cover object-top block rounded-[1.6rem] drop-shadow-2xl border border-vuno-border/50"
+              />
+              <figcaption className="mt-2 text-center text-[11px] text-vuno-muted">
+                <span className="font-numeric text-vuno-cyan font-bold">{i + 1}</span> · {cap}
+              </figcaption>
+            </figure>
           ))}
-          {/* 데이터 라인 — Troponin trend */}
-          <path d="M 30 70 L 80 65 L 130 50 L 180 30 L 230 20 L 280 15" stroke="#EF4444" strokeWidth="1.5" fill="none" />
-          <path d="M 30 70 L 80 65 L 130 50 L 180 30 L 230 20 L 280 15 L 280 80 L 30 80 Z" fill="#EF4444" opacity="0.1" />
-          {/* 정상 라인 */}
-          <line x1="20" y1="70" x2="290" y2="70" stroke="#22C55E" strokeWidth="0.5" strokeDasharray="3,3" />
-          {/* 데이터 포인트 */}
-          {[
-            { x: 30, y: 70 }, { x: 80, y: 65 }, { x: 130, y: 50 },
-            { x: 180, y: 30 }, { x: 230, y: 20 }, { x: 280, y: 15 },
-          ].map((p, i) => (
-            <circle key={i} cx={p.x} cy={p.y} r="2" fill="#EF4444" />
-          ))}
-          {/* 라벨 */}
-          <text x="22" y="14" fontSize="6" fill="#94A3B8">Troponin (ng/mL)</text>
-        </svg>
+        </div>
       </div>
-      {/* 핵심 검사값 */}
-      <div className="grid grid-cols-4 gap-2">
-        <PreviewStat label="Troponin" value="0.82" unit="ng/mL" warn />
-        <PreviewStat label="CK-MB"    value="12.4" unit="ng/mL" warn />
-        <PreviewStat label="WBC"      value="10.2" unit="10³/µL" />
-        <PreviewStat label="Cr"       value="0.9"  unit="mg/dL" />
-      </div>
-    </div>
-  );
-}
-
-function PreviewStat({ label, value, unit, warn }: { label: string; value: string; unit: string; warn?: boolean }) {
-  return (
-    <div className="bg-vuno-bg border border-vuno-border/60 px-2.5 py-2">
-      <div className="text-[10px] text-vuno-dim uppercase tracking-wider truncate">{label}</div>
-      <div className={"text-base font-bold font-numeric mt-0.5 " + (warn ? "text-red-400" : "text-vuno-cyan")}>
-        {value}
-        <span className="text-[10px] font-normal text-vuno-muted ml-0.5">{unit}</span>
+      <div className="mt-1 text-[11px] text-vuno-dim flex items-center gap-1.5">
+        <ChevronRight className="h-3.5 w-3.5" />
+        옆으로 스크롤하면 로그인부터 알림까지 전체 시연 화면을 볼 수 있습니다.
       </div>
     </div>
   );
@@ -320,18 +391,18 @@ function BottomCTA() {
   return (
     <section className="py-20 border-t border-vuno-divider">
       <div className="max-w-[900px] mx-auto px-6 text-center">
-        <h2 className="text-3xl md:text-4xl font-bold text-white">
+        <h2 className="text-4xl md:text-5xl font-bold text-white">
           실제 화면으로 직접 확인하세요
         </h2>
-        <p className="mt-3 text-vuno-muted">
+        <p className="mt-4 text-lg md:text-xl text-vuno-muted">
           5명의 데모 환자가 등록되어 있습니다. 클릭 한 번이면 됩니다.
         </p>
         <Link
           to="/demo"
-          className="inline-flex items-center gap-2 mt-7 h-12 px-8 font-bold bg-vuno-cyan text-vuno-bg hover:bg-vuno-cyanGlow transition-colors tracking-wider uppercase text-sm"
+          className="inline-flex items-center gap-2 mt-8 h-14 px-9 font-bold bg-vuno-cyan text-vuno-bg hover:bg-vuno-cyanGlow transition-colors tracking-wider uppercase text-base"
         >
           Live Demo 시작
-          <ArrowUpRight className="h-4 w-4" />
+          <ArrowUpRight className="h-5 w-5" />
         </Link>
       </div>
     </section>

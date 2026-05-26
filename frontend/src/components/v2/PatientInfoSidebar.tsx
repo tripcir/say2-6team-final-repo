@@ -108,8 +108,8 @@ export function PatientInfoSidebar({
         <div className="px-4 py-3.5 border-b border-slate-200 dark:border-vuno-border">
           {/* 수정 버튼 (allowEdit 모드 전용) */}
           {allowEdit && (
-            <div className="flex justify-between items-center mb-2.5">
-              <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-slate-100 dark:bg-vuno-bg border border-slate-200 dark:border-vuno-border">
+            <div className="flex justify-between items-center gap-2 mb-2.5">
+              <span className="flex-1 inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-md bg-slate-100 dark:bg-vuno-bg border border-slate-200 dark:border-vuno-border">
                 <span className="h-3 w-1 rounded-full bg-brand-500 flex-shrink-0" />
                 <span className="text-[14px] font-bold text-slate-700 dark:text-slate-100 tracking-wide">환자 정보</span>
               </span>
@@ -160,10 +160,15 @@ export function PatientInfoSidebar({
               className={cn("w-full text-2xl font-bold text-slate-900 dark:text-white border-b border-slate-200 dark:border-vuno-border focus:border-brand-500 pb-0.5 placeholder:text-slate-300 dark:placeholder:text-vuno-dim", inlineInput)}
             />
           ) : (
-            <div className="text-2xl font-bold text-slate-900 dark:text-white">{patient.name}</div>
+            <div className="flex items-baseline gap-2 flex-wrap">
+              <span className="text-2xl font-bold text-slate-900 dark:text-white">{patient.name}</span>
+              <span className="text-[15px] text-slate-500 dark:text-vuno-muted font-numeric">
+                {patient.sex === "M" ? "남" : "여"} / {patient.age}세
+              </span>
+            </div>
           )}
 
-          {edit ? (
+          {edit && (
             <div className="flex items-center gap-2 mt-2">
               <div className="flex gap-1">
                 {(["M", "F"] as const).map((s) => (
@@ -188,10 +193,6 @@ export function PatientInfoSidebar({
                 className={cn("w-14 text-[15px] font-numeric text-slate-700 dark:text-slate-200 border-b border-slate-200 dark:border-vuno-border focus:border-brand-500 text-right px-1", inlineInput)}
               />
               <span className="text-[15px] text-slate-500 dark:text-vuno-muted">세</span>
-            </div>
-          ) : (
-            <div className="text-[15px] text-slate-500 dark:text-vuno-muted font-numeric mt-1">
-              {patient.sex === "M" ? "남" : "여"} / {patient.age}세
             </div>
           )}
         </div>
@@ -441,7 +442,7 @@ function MemoLog({ patient }: { patient: DemoPatient }) {
 
 function SidebarLabel({ children }: { children: React.ReactNode }) {
   return (
-    <div className="inline-flex items-center gap-1.5 mb-2.5 px-2.5 py-1 rounded-md bg-slate-100 dark:bg-vuno-bg border border-slate-200 dark:border-vuno-border">
+    <div className="flex items-center gap-1.5 mb-2.5 px-2.5 py-1.5 rounded-md bg-slate-100 dark:bg-vuno-bg border border-slate-200 dark:border-vuno-border">
       <span className="h-3 w-1 rounded-full bg-brand-500 flex-shrink-0" />
       <span className="text-[14px] font-bold text-slate-700 dark:text-slate-100 tracking-wide whitespace-nowrap">{children}</span>
     </div>

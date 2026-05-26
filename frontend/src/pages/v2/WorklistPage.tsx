@@ -47,10 +47,21 @@ function soGyeonOf(
   }
   return "all";
 }
+// 백엔드 소견서 원본 상태 — 배지에서 "소견 생성 완료(preliminary)"를 정확히 구분하기 위함.
+// (soGyeonOf는 preliminary와 "작성 가능"을 모두 "done"으로 합치므로 별도 조회 필요)
+function reportRawOf(
+  p: DemoPatient,
+  backend: Map<string, BackendReportStatus>,
+): BackendReportStatus | undefined {
+  const subjectKey = p.mimic?.subject_id ? `subject:${p.mimic.subject_id}` : null;
+  return backend.get(p.id) ?? (subjectKey ? backend.get(subjectKey) : undefined);
+}
 // 검사 진행 상태 — 검사 대기 / 검사 중 / 검사 완료
+// "검사 완료"는 ECG·CXR·LAB 3개 모달 결과가 모두 도착했을 때만 (aiStatus 휴리스틱 의존 X).
 function examStatusOf(p: DemoPatient): ExamStatus {
-  if (p.aiStatus === "done") return "done";
-  if (p.aiStatus === "analyzing") return "inProgress";
+  if (p.ecg === "done" && p.cxr === "done" && p.lab === "done") return "done";
+  if (p.ecg === "running" || p.cxr === "running" || p.lab === "running" || p.aiStatus === "analyzing")
+    return "inProgress";
   return "waiting";
 }
 // 행 클릭 라우팅 — 검사 진행 상태 + 소견서 서명 여부로 분기
@@ -174,7 +185,7 @@ export default function WorklistPage() {
                 <Radio label="전체" active={soGyeon === "all"} onClick={() => setSoGyeon("all")} />
                 <Radio label="작성 가능 (AI 분석 완료)" active={soGyeon === "done"} onClick={() => setSoGyeon("done")} />
                 <Radio label="검토 중 / 서명 대기" active={soGyeon === "review"} onClick={() => setSoGyeon("review")} />
-                <Radio label="서명 완료 · EMR 전송" active={soGyeon === "signed"} onClick={() => setSoGyeon("signed")} />
+                <Radio label="소견 완료 · EMR 전송" active={soGyeon === "signed"} onClick={() => setSoGyeon("signed")} />
               </div>
             </div>
 
@@ -224,6 +235,7 @@ export default function WorklistPage() {
                   const meta = KTAS_META[p.ktas as KTAS];
                   const sg = soGyeonOf(p, backendStatus);
                   const es = examStatusOf(p);
+                  const reportRaw = reportRawOf(p, backendStatus);
                   return (
                     <tr
                       key={p.id}
@@ -242,7 +254,7 @@ export default function WorklistPage() {
                       <td className="px-3 py-3 text-slate-600 dark:text-vuno-muted text-[13px] max-w-[280px] truncate">{p.chief}</td>
                       <td className="px-3 py-3 text-slate-500 dark:text-vuno-muted text-[13px] font-numeric whitespace-nowrap">{fmtTime(p.registeredAt)}</td>
                       <td className="px-3 py-3 text-center whitespace-nowrap">
-                        <ExamStatusBadge exam={es} soGyeon={sg} />
+                        <ExamStatusBadge exam={es} soGyeon={sg} reportRaw={reportRaw} />
                       </td>
                     </tr>
                   );
@@ -414,20 +426,30 @@ function PageBtn({ children, onClick, disabled }: { children: React.ReactNode; o
   );
 }
 
-// 검사 진행(검사 완료 / 검사 대기) + 소견서 서명 상태를 한 번에 보여주는 배지
-//   · 서명 완료 → emerald "✓ 서명 완료" (소견서 뷰어로 이동)
-//   · 검사 완료 → emerald "✓ 검사 완료" (AI 종합소견 생성 페이지로 이동)
-//   · 검사 진행 중 → amber blink "분석 중"
-//   · 검사 대기 → slate "검사 대기" (AI 분석 페이지로 이동)
-function ExamStatusBadge({ exam, soGyeon }: { exam: ExamStatus; soGyeon: SoGyeon }) {
+// 소견서 상태 + 검사 진행을 한 배지로 — 앱(_ExamStatusBadge)과 동일 단계.
+//   · 소견 완료(signed/amended)        → emerald "✓ 소견 완료" (뷰어로 이동)
+//   · 검토 중(reviewed)                → purple "검토 중"
+//   · 소견 생성 완료·확정 대기(preliminary) → blue "소견 생성 완료 · 확정 대기"
+//   · 검사 완료(소견서 미생성)          → emerald "✓ 검사 완료" (소견 생성 페이지로 이동)
+//   · 검사 진행 중                      → amber blink "분석 중"
+//   · 검사 대기                        → slate "검사 대기"
+function ExamStatusBadge({ exam, soGyeon, reportRaw }: { exam: ExamStatus; soGyeon: SoGyeon; reportRaw?: BackendReportStatus }) {
+  const base = "inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[11px] font-bold";
   if (soGyeon === "signed") {
-    return <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[11px] font-bold bg-emerald-100 border border-emerald-400 text-emerald-700">✓ 서명 완료</span>;
+    return <span className={base + " bg-emerald-100 border border-emerald-400 text-emerald-700"}>✓ 소견 완료</span>;
+  }
+  if (soGyeon === "review") {
+    return <span className={base + " bg-purple-50 border border-purple-300 text-purple-700"}>검토 중</span>;
+  }
+  // 소견서가 실제 생성된(preliminary) 경우만 — 앱과 동일한 파란 배지
+  if (reportRaw === "preliminary") {
+    return <span className={base + " bg-blue-50 border border-blue-300 text-blue-700"}>소견 생성 완료 · 확정 대기</span>;
   }
   if (exam === "done") {
-    return <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[11px] font-bold bg-emerald-50 border border-emerald-300 text-emerald-700">✓ 검사 완료</span>;
+    return <span className={base + " bg-emerald-50 border border-emerald-300 text-emerald-700"}>✓ 검사 완료</span>;
   }
   if (exam === "inProgress") {
-    return <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[11px] font-bold bg-amber-100 border border-amber-400 text-amber-700 animate-pulse">분석 중</span>;
+    return <span className={base + " bg-amber-100 border border-amber-400 text-amber-700 animate-pulse"}>분석 중</span>;
   }
-  return <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[11px] font-bold bg-slate-100 border border-slate-300 text-slate-600">검사 대기</span>;
+  return <span className={base + " bg-slate-100 border border-slate-300 text-slate-600"}>검사 대기</span>;
 }

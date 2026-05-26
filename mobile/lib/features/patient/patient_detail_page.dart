@@ -17,7 +17,7 @@ import 'lab_clinical_sheet.dart';
 /// + 모든 권고 완료 안내 + footer "종합 소견서 생성" 버튼.
 class PatientDetailPage extends ConsumerWidget {
   final String patientId; // encounter_id
-  const PatientDetailPage({super.key, required this.patientId});
+  PatientDetailPage({super.key, required this.patientId});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -27,7 +27,7 @@ class PatientDetailPage extends ConsumerWidget {
       backgroundColor: AppColors.slate50,
       appBar: EmonTopBar(current: 'analysis', patientId: patientId),
       body: async.when(
-        loading: () => const Center(child: CircularProgressIndicator()),
+        loading: () => Center(child: CircularProgressIndicator()),
         error: (e, _) => _ErrorView(
           message: '$e',
           onRetry: () => ref.invalidate(patientDetailProvider),
@@ -65,12 +65,12 @@ class PatientDetailPage extends ConsumerWidget {
                   onRefresh: () async =>
                       ref.invalidate(patientDetailProvider),
                   child: ListView(
-                    padding: const EdgeInsets.all(12),
+                    padding: EdgeInsets.all(12),
                     children: [
                       _PanelHeader(patientId: patientId),
-                      const SizedBox(height: 10),
+                      SizedBox(height: 10),
                       if (data.recommendations.isEmpty)
-                        const _LoadingCard()
+                        _LoadingCard()
                       else ...[
                         // AI 1·2·3차 권고
                         for (final r in ranks) ...[
@@ -81,7 +81,7 @@ class PatientDetailPage extends ConsumerWidget {
                             modalResults: data.modalResults,
                             patient: data.patient,
                           ),
-                          const SizedBox(height: 10),
+                          SizedBox(height: 10),
                         ],
                         // 의사 직접 오더 그룹
                         if (manualRecs.isNotEmpty) ...[
@@ -91,12 +91,12 @@ class PatientDetailPage extends ConsumerWidget {
                             modalResults: data.modalResults,
                             patient: data.patient,
                           ),
-                          const SizedBox(height: 10),
+                          SizedBox(height: 10),
                         ],
                         // 모든 권고 완료 안내
-                        if (allDone) const _AllDoneNotice(),
+                        if (allDone) _AllDoneNotice(),
                       ],
-                      const SizedBox(height: 12),
+                      SizedBox(height: 12),
                       // 검사 직접 오더 — ECG/CXR/LAB 3개 버튼 (AI 권고와 무관)
                       _DirectOrderPanel(
                         encounterId: patientId,
@@ -126,7 +126,7 @@ class PatientDetailPage extends ConsumerWidget {
 // ────────────────────────────────────────────────────────────
 class _PanelHeader extends ConsumerWidget {
   final String patientId;
-  const _PanelHeader({required this.patientId});
+  _PanelHeader({required this.patientId});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -137,7 +137,7 @@ class _PanelHeader extends ConsumerWidget {
           error: (_, _) => LiveStatus.offline,
         );
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+      padding: EdgeInsets.symmetric(horizontal: 14, vertical: 12),
       decoration: BoxDecoration(
         color: AppColors.brand50,
         border: Border.all(color: AppColors.brand200),
@@ -145,10 +145,10 @@ class _PanelHeader extends ConsumerWidget {
       ),
       child: Row(
         children: [
-          const Icon(Icons.auto_awesome,
+          Icon(Icons.auto_awesome,
               color: AppColors.brand600, size: 20),
-          const SizedBox(width: 8),
-          const Column(
+          SizedBox(width: 8),
+          Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(
@@ -169,7 +169,7 @@ class _PanelHeader extends ConsumerWidget {
               ),
             ],
           ),
-          const Spacer(),
+          Spacer(),
           LiveBadge(status: status),
         ],
       ),
@@ -184,7 +184,7 @@ class _ProgressSummary extends StatelessWidget {
   final int done;
   final int draft;
   final VoidCallback? onApproveAll;
-  const _ProgressSummary({
+  _ProgressSummary({
     required this.totalAi,
     required this.totalManual,
     required this.done,
@@ -195,9 +195,9 @@ class _ProgressSummary extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.all(12),
+      padding: EdgeInsets.all(12),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: AppColors.surface,
         border: Border.all(color: AppColors.slate300),
         borderRadius: BorderRadius.circular(4),
       ),
@@ -205,7 +205,7 @@ class _ProgressSummary extends StatelessWidget {
         children: [
           Expanded(
             child: DefaultTextStyle(
-              style: const TextStyle(
+              style: TextStyle(
                   fontSize: 12,
                   color: AppColors.slate600,
                   fontFeatures: [FontFeature.tabularFigures()]),
@@ -213,31 +213,31 @@ class _ProgressSummary extends StatelessWidget {
                 spacing: 4,
                 children: [
                   Text.rich(TextSpan(children: [
-                    const TextSpan(text: 'AI '),
+                    TextSpan(text: 'AI '),
                     TextSpan(
                       text: '$totalAi',
-                      style: const TextStyle(
+                      style: TextStyle(
                           fontWeight: FontWeight.bold,
                           color: AppColors.slate900),
                     ),
-                    const TextSpan(text: ' · 의사 '),
+                    TextSpan(text: ' · 의사 '),
                     TextSpan(
                       text: '$totalManual',
-                      style: const TextStyle(
+                      style: TextStyle(
                           fontWeight: FontWeight.bold,
                           color: AppColors.slate900),
                     ),
-                    const TextSpan(text: ' · 완료 '),
+                    TextSpan(text: ' · 완료 '),
                     TextSpan(
                       text: '$done',
-                      style: const TextStyle(
+                      style: TextStyle(
                           fontWeight: FontWeight.bold,
                           color: AppColors.emerald600),
                     ),
-                    const TextSpan(text: ' · 미승인 '),
+                    TextSpan(text: ' · 미승인 '),
                     TextSpan(
                       text: '$draft',
-                      style: const TextStyle(
+                      style: TextStyle(
                           fontWeight: FontWeight.bold,
                           color: AppColors.purple600),
                     ),
@@ -253,7 +253,7 @@ class _ProgressSummary extends StatelessWidget {
                 style: ElevatedButton.styleFrom(
                   backgroundColor: AppColors.brand600,
                   foregroundColor: Colors.white,
-                  padding: const EdgeInsets.symmetric(horizontal: 10),
+                  padding: EdgeInsets.symmetric(horizontal: 10),
                   minimumSize: Size.zero,
                   shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(8)),
@@ -261,7 +261,7 @@ class _ProgressSummary extends StatelessWidget {
                 onPressed: onApproveAll,
                 child: Text(
                   '모두 승인 ($draft)',
-                  style: const TextStyle(
+                  style: TextStyle(
                       fontSize: 11, fontWeight: FontWeight.bold),
                 ),
               ),
@@ -279,7 +279,7 @@ class _RankGroup extends StatelessWidget {
   final String encounterId;
   final Map<String, ModalSummary> modalResults;
   final PatientInfo patient;
-  const _RankGroup({
+  _RankGroup({
     required this.rank,
     required this.recs,
     required this.encounterId,
@@ -302,18 +302,18 @@ class _RankGroup extends StatelessWidget {
           // 그룹 헤더
           Container(
             padding:
-                const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-            decoration: const BoxDecoration(
+                EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+            decoration: BoxDecoration(
               border: Border(
                   bottom: BorderSide(color: AppColors.slate200)),
             ),
             child: Row(
               children: [
-                const Icon(Icons.auto_awesome,
+                Icon(Icons.auto_awesome,
                     size: 12, color: AppColors.brand600),
-                const SizedBox(width: 6),
+                SizedBox(width: 6),
                 Container(
-                  padding: const EdgeInsets.symmetric(
+                  padding: EdgeInsets.symmetric(
                       horizontal: 8, vertical: 3),
                   decoration: BoxDecoration(
                     color: meta.badgeBg,
@@ -321,17 +321,17 @@ class _RankGroup extends StatelessWidget {
                   ),
                   child: Text(
                     meta.label,
-                    style: const TextStyle(
+                    style: TextStyle(
                       color: Colors.white,
                       fontSize: 11,
                       fontWeight: FontWeight.bold,
                     ),
                   ),
                 ),
-                const SizedBox(width: 8),
+                SizedBox(width: 8),
                 Text(
                   'AI 분석 기반 · 검사 ${recs.length}건',
-                  style: const TextStyle(
+                  style: TextStyle(
                       fontSize: 11,
                       fontWeight: FontWeight.w500,
                       color: AppColors.slate500,
@@ -342,12 +342,12 @@ class _RankGroup extends StatelessWidget {
           ),
           // 권고 카드들
           Container(
-            color: Colors.white,
-            padding: const EdgeInsets.all(10),
+            color: AppColors.surface,
+            padding: EdgeInsets.all(10),
             child: Column(
               children: [
                 for (int i = 0; i < recs.length; i++) ...[
-                  if (i > 0) const SizedBox(height: 8),
+                  if (i > 0) SizedBox(height: 8),
                   _RecCard(
                     rec: recs[i],
                     encounterId: encounterId,
@@ -372,7 +372,7 @@ class _DirectOrderPanel extends ConsumerStatefulWidget {
   final PatientInfo patient;
   final List<AIRec> recommendations;
   final Map<String, ModalSummary> modalResults;
-  const _DirectOrderPanel({
+  _DirectOrderPanel({
     required this.encounterId,
     required this.patient,
     required this.recommendations,
@@ -389,6 +389,13 @@ class _DirectOrderPanelState extends ConsumerState<_DirectOrderPanel> {
   // 모달 추론 서버 ON/OFF (목업 — 배포 후 /ops/health 연동). 칩 탭으로 토글.
   final Map<String, bool> _servers = {'ECG': true, 'CXR': true, 'LAB': true};
   final Set<String> _manualDone = {}; // 추론 서버 OFF 시 수기 입력 완료
+  final _memoCtrl = TextEditingController(); // 의사 메모 (자동 저장 — 데모)
+
+  @override
+  void dispose() {
+    _memoCtrl.dispose();
+    super.dispose();
+  }
 
   Future<void> _request(String modality) async {
     setState(() {
@@ -405,7 +412,7 @@ class _DirectOrderPanelState extends ConsumerState<_DirectOrderPanel> {
       if (!mounted) return;
       TopNotificationBanner.show(context,
           title: '$modality 직접 오더 — 분석 시작',
-          duration: const Duration(seconds: 2));
+          duration: Duration(seconds: 2));
     } catch (e) {
       if (!mounted) return;
       TopNotificationBanner.show(context,
@@ -413,7 +420,7 @@ class _DirectOrderPanelState extends ConsumerState<_DirectOrderPanel> {
       setState(() => _requested.remove(modality));
     } finally {
       if (mounted) {
-        Future.delayed(const Duration(seconds: 5), () {
+        Future.delayed(Duration(seconds: 5), () {
           if (mounted) setState(() => _requesting.remove(modality));
         });
       }
@@ -435,14 +442,14 @@ class _DirectOrderPanelState extends ConsumerState<_DirectOrderPanel> {
       context: context,
       builder: (ctx) => AlertDialog(
         title: Text('$modality 수기 입력',
-            style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+            style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
         content: Column(
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Text('추론 서버 OFF — 의사가 판독 결과를 직접 기록합니다.',
+            Text('추론 서버 OFF — 의사가 판독 결과를 직접 기록합니다.',
                 style: TextStyle(fontSize: 12, color: AppColors.slate500)),
-            const SizedBox(height: 12),
+            SizedBox(height: 12),
             TextField(
               controller: ctrl,
               maxLines: 4,
@@ -450,7 +457,7 @@ class _DirectOrderPanelState extends ConsumerState<_DirectOrderPanel> {
                 hintText: '판독 소견 입력…',
                 border: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(8)),
-                contentPadding: const EdgeInsets.all(12),
+                contentPadding: EdgeInsets.all(12),
               ),
             ),
           ],
@@ -458,13 +465,13 @@ class _DirectOrderPanelState extends ConsumerState<_DirectOrderPanel> {
         actions: [
           TextButton(
               onPressed: () => Navigator.pop(ctx, false),
-              child: const Text('취소')),
+              child: Text('취소')),
           ElevatedButton(
             style: ElevatedButton.styleFrom(
                 backgroundColor: AppColors.brand600,
                 foregroundColor: Colors.white),
             onPressed: () => Navigator.pop(ctx, true),
-            child: const Text('저장'),
+            child: Text('저장'),
           ),
         ],
       ),
@@ -473,17 +480,17 @@ class _DirectOrderPanelState extends ConsumerState<_DirectOrderPanel> {
       setState(() => _manualDone.add(modality));
       TopNotificationBanner.show(context,
           title: '$modality 수기 입력 완료 (데모)',
-          duration: const Duration(seconds: 2));
+          duration: Duration(seconds: 2));
     }
   }
 
   @override
   Widget build(BuildContext context) {
-    const all = ['ECG', 'CXR', 'LAB'];
+    final all = ['ECG', 'CXR', 'LAB'];
     final anyDown = all.any((m) => !(_servers[m] ?? true));
     return Container(
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: AppColors.surface,
         border: Border.all(color: AppColors.slate300),
         borderRadius: BorderRadius.circular(4),
       ),
@@ -491,38 +498,45 @@ class _DirectOrderPanelState extends ConsumerState<_DirectOrderPanel> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Container(
-            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-            decoration: const BoxDecoration(
+            padding: EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+            decoration: BoxDecoration(
               border: Border(bottom: BorderSide(color: AppColors.slate200)),
             ),
-            child: const Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
+            child: Row(
               children: [
-                Text('검사 직접 오더',
+                Container(
+                  width: 28,
+                  height: 28,
+                  decoration: BoxDecoration(
+                    color: AppColors.slate700,
+                    borderRadius: BorderRadius.circular(6),
+                  ),
+                  child: Icon(Icons.medical_services_outlined,
+                      size: 15, color: Colors.white),
+                ),
+                SizedBox(width: 8),
+                Text('의사 직접 지시',
                     style: TextStyle(
                         fontSize: 14,
                         fontWeight: FontWeight.bold,
                         color: AppColors.slate900)),
-                SizedBox(height: 2),
-                Text('AI 권고 외 검사를 의사가 직접 지시 · 모달 추론 서버 ON/OFF',
-                    style: TextStyle(fontSize: 10, color: AppColors.slate400)),
               ],
             ),
           ),
           Padding(
-            padding: const EdgeInsets.all(10),
+            padding: EdgeInsets.all(10),
             child: Column(
               children: [
                 if (anyDown) ...[
                   Container(
-                    padding: const EdgeInsets.symmetric(
+                    padding: EdgeInsets.symmetric(
                         horizontal: 10, vertical: 8),
                     decoration: BoxDecoration(
                       color: AppColors.amber50,
                       border: Border.all(color: AppColors.amber300),
                       borderRadius: BorderRadius.circular(8),
                     ),
-                    child: const Row(
+                    child: Row(
                       children: [
                         Icon(Icons.wifi_off,
                             size: 14, color: AppColors.amber700),
@@ -539,12 +553,53 @@ class _DirectOrderPanelState extends ConsumerState<_DirectOrderPanel> {
                       ],
                     ),
                   ),
-                  const SizedBox(height: 8),
+                  SizedBox(height: 8),
                 ],
                 for (int i = 0; i < all.length; i++) ...[
-                  if (i > 0) const SizedBox(height: 8),
+                  if (i > 0) SizedBox(height: 8),
                   _buildRow(all[i]),
                 ],
+                SizedBox(height: 14),
+                // 의사 메모 — 웹 ManualOrderPanel 메모칸과 동일
+                Row(
+                  children: [
+                    Icon(Icons.edit_outlined,
+                        size: 15, color: AppColors.slate500),
+                    SizedBox(width: 5),
+                    Text('의사 메모',
+                        style: TextStyle(
+                            fontSize: 13,
+                            fontWeight: FontWeight.bold,
+                            color: AppColors.slate800)),
+                    Spacer(),
+                    Text('자동 저장',
+                        style:
+                            TextStyle(fontSize: 11, color: AppColors.slate400)),
+                  ],
+                ),
+                SizedBox(height: 6),
+                TextField(
+                  controller: _memoCtrl,
+                  maxLines: 4,
+                  style: TextStyle(fontSize: 13),
+                  decoration: InputDecoration(
+                    hintText: '처치 경과 · 인계사항 · 환자 특이사항을 입력하세요',
+                    hintStyle: TextStyle(
+                        fontSize: 13, color: AppColors.slate400),
+                    isDense: true,
+                    contentPadding: EdgeInsets.all(10),
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(6),
+                      borderSide:
+                          BorderSide(color: AppColors.slate200),
+                    ),
+                    enabledBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(6),
+                      borderSide:
+                          BorderSide(color: AppColors.slate200),
+                    ),
+                  ),
+                ),
               ],
             ),
           ),
@@ -582,64 +637,59 @@ class _DirectOrderPanelState extends ConsumerState<_DirectOrderPanel> {
             : (Colors.white, AppColors.slate200);
 
     return Container(
-      padding: const EdgeInsets.all(10),
+      padding: EdgeInsets.all(10),
       decoration: BoxDecoration(
         color: cardBg,
         border: Border.all(color: cardBorder),
         borderRadius: BorderRadius.circular(4),
       ),
-      child: Column(
+      // 직렬(인라인): 아이콘 + 이름·라벨 + 활성/비활성 칩 + 검사 지시 버튼
+      child: Row(
         children: [
-          // 상단: 아이콘 + 이름 + 서버 ON/OFF 칩
-          Row(
-            children: [
-              Container(
-                width: 28,
-                height: 28,
-                decoration: BoxDecoration(
-                  color: AppColors.slate100,
-                  borderRadius: BorderRadius.circular(4),
-                ),
-                child: Icon(icon, size: 14, color: AppColors.slate600),
-              ),
-              const SizedBox(width: 8),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(modality,
-                        style: const TextStyle(
-                            fontSize: 13,
-                            fontWeight: FontWeight.bold,
-                            color: AppColors.slate900,
-                            height: 1)),
-                    const SizedBox(height: 2),
-                    Text(label,
-                        style: const TextStyle(
-                            fontSize: 10, color: AppColors.slate400)),
-                  ],
-                ),
-              ),
-              _ServerChip(
-                up: serverUp,
-                onTap: () =>
-                    setState(() => _servers[modality] = !serverUp),
-              ),
-            ],
-          ),
-          const SizedBox(height: 8),
-          // 하단: 액션
-          Align(
-            alignment: Alignment.centerRight,
-            child: _action(
-              modality,
-              serverUp: serverUp,
-              manualDone: manualDone,
-              done: done,
-              running: running,
-              requesting: requesting,
-              ordered: ordered,
+          Container(
+            width: 28,
+            height: 28,
+            decoration: BoxDecoration(
+              color: AppColors.slate100,
+              borderRadius: BorderRadius.circular(4),
             ),
+            child: Icon(icon, size: 14, color: AppColors.slate600),
+          ),
+          SizedBox(width: 8),
+          Expanded(
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.baseline,
+              textBaseline: TextBaseline.alphabetic,
+              children: [
+                Text(modality,
+                    style: TextStyle(
+                        fontSize: 14,
+                        fontWeight: FontWeight.bold,
+                        color: AppColors.slate900)),
+                SizedBox(width: 6),
+                Flexible(
+                  child: Text(label,
+                      overflow: TextOverflow.ellipsis,
+                      style: TextStyle(
+                          fontSize: 11, color: AppColors.slate400)),
+                ),
+              ],
+            ),
+          ),
+          SizedBox(width: 6),
+          _ServerChip(
+            up: serverUp,
+            onTap: () => setState(() => _servers[modality] = !serverUp),
+          ),
+          SizedBox(width: 6),
+          _action(
+            modality,
+            serverUp: serverUp,
+            manualDone: manualDone,
+            done: done,
+            running: running,
+            requesting: requesting,
+            ordered: ordered,
           ),
         ],
       ),
@@ -656,13 +706,13 @@ class _DirectOrderPanelState extends ConsumerState<_DirectOrderPanel> {
     required bool ordered,
   }) {
     Widget chip(String text, Color bg, Color fg, {Widget? leading}) => Container(
-          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+          padding: EdgeInsets.symmetric(horizontal: 8, vertical: 4),
           decoration: BoxDecoration(
               color: bg, borderRadius: BorderRadius.circular(4)),
           child: Row(
             mainAxisSize: MainAxisSize.min,
             children: [
-              if (leading != null) ...[leading, const SizedBox(width: 4)],
+              if (leading != null) ...[leading, SizedBox(width: 4)],
               Text(text,
                   style: TextStyle(
                       fontSize: 11, fontWeight: FontWeight.bold, color: fg)),
@@ -696,7 +746,7 @@ class _DirectOrderPanelState extends ConsumerState<_DirectOrderPanel> {
         running ? '분석 중' : '요청 중',
         AppColors.amber100,
         AppColors.amber700,
-        leading: const SizedBox(
+        leading: SizedBox(
           width: 11,
           height: 11,
           child: CircularProgressIndicator(
@@ -705,11 +755,11 @@ class _DirectOrderPanelState extends ConsumerState<_DirectOrderPanel> {
       );
     }
     if (ordered) {
-      return chip('오더됨', AppColors.slate100, AppColors.slate400);
+      return chip('지시됨', AppColors.slate100, AppColors.slate400);
     }
     return _ActionButton(
-      label: '직접 오더',
-      icon: Icons.add,
+      label: '검사 지시',
+      icon: Icons.medical_services_outlined,
       bg: Colors.white,
       fg: AppColors.slate700,
       border: AppColors.slate400,
@@ -722,7 +772,7 @@ class _DirectOrderPanelState extends ConsumerState<_DirectOrderPanel> {
 class _ServerChip extends StatelessWidget {
   final bool up;
   final VoidCallback onTap;
-  const _ServerChip({required this.up, required this.onTap});
+  _ServerChip({required this.up, required this.onTap});
 
   @override
   Widget build(BuildContext context) {
@@ -735,7 +785,7 @@ class _ServerChip extends StatelessWidget {
       child: Tooltip(
         message: '추론 서버 상태 (탭해서 ON/OFF 전환)',
         child: Container(
-          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 5),
+          padding: EdgeInsets.symmetric(horizontal: 8, vertical: 5),
           decoration: BoxDecoration(
             color: bg,
             border: Border.all(color: border),
@@ -745,8 +795,8 @@ class _ServerChip extends StatelessWidget {
             mainAxisSize: MainAxisSize.min,
             children: [
               Icon(up ? Icons.wifi : Icons.wifi_off, size: 12, color: fg),
-              const SizedBox(width: 4),
-              Text(up ? 'ON' : 'OFF',
+              SizedBox(width: 4),
+              Text(up ? '활성' : '비활성',
                   style: TextStyle(
                       fontSize: 10, fontWeight: FontWeight.bold, color: fg)),
             ],
@@ -765,7 +815,7 @@ class _ActionButton extends StatelessWidget {
   final Color fg;
   final Color? border;
   final VoidCallback onTap;
-  const _ActionButton({
+  _ActionButton({
     required this.label,
     required this.icon,
     required this.bg,
@@ -780,8 +830,8 @@ class _ActionButton extends StatelessWidget {
       onTap: onTap,
       borderRadius: BorderRadius.circular(8),
       child: Container(
-        height: 30,
-        padding: const EdgeInsets.symmetric(horizontal: 12),
+        // '활성' 칩과 동일 크기 — 높이 고정 제거, 패딩/아이콘/글씨 칩에 맞춤
+        padding: EdgeInsets.symmetric(horizontal: 8, vertical: 5),
         decoration: BoxDecoration(
           color: bg,
           border: border != null ? Border.all(color: border!) : null,
@@ -790,11 +840,11 @@ class _ActionButton extends StatelessWidget {
         child: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(icon, size: 14, color: fg),
-            const SizedBox(width: 4),
+            Icon(icon, size: 12, color: fg),
+            SizedBox(width: 4),
             Text(label,
                 style: TextStyle(
-                    fontSize: 12, fontWeight: FontWeight.bold, color: fg)),
+                    fontSize: 10, fontWeight: FontWeight.bold, color: fg)),
           ],
         ),
       ),
@@ -808,7 +858,7 @@ class _ManualOrderGroup extends StatelessWidget {
   final String encounterId;
   final Map<String, ModalSummary> modalResults;
   final PatientInfo patient;
-  const _ManualOrderGroup({
+  _ManualOrderGroup({
     required this.recs,
     required this.encounterId,
     required this.modalResults,
@@ -819,7 +869,7 @@ class _ManualOrderGroup extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: AppColors.surface,
         border: Border.all(color: AppColors.slate300),
         borderRadius: BorderRadius.circular(4),
       ),
@@ -828,24 +878,24 @@ class _ManualOrderGroup extends StatelessWidget {
         children: [
           Container(
             padding:
-                const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-            decoration: const BoxDecoration(
+                EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+            decoration: BoxDecoration(
               color: AppColors.slate100,
               border: Border(
                   bottom: BorderSide(color: AppColors.slate300)),
             ),
             child: Row(
               children: [
-                const Icon(Icons.medical_services,
+                Icon(Icons.medical_services,
                     size: 14, color: AppColors.slate700),
-                const SizedBox(width: 6),
+                SizedBox(width: 6),
                 Container(
-                  padding: const EdgeInsets.symmetric(
+                  padding: EdgeInsets.symmetric(
                       horizontal: 8, vertical: 3),
                   decoration: BoxDecoration(
                       color: AppColors.slate700,
                       borderRadius: BorderRadius.circular(2)),
-                  child: const Text(
+                  child: Text(
                     '의사 직접 오더',
                     style: TextStyle(
                         color: Colors.white,
@@ -853,9 +903,9 @@ class _ManualOrderGroup extends StatelessWidget {
                         fontWeight: FontWeight.bold),
                   ),
                 ),
-                const SizedBox(width: 8),
+                SizedBox(width: 8),
                 Text('AI 권고와 무관 · 의사 판단 · 검사 ${recs.length}건',
-                    style: const TextStyle(
+                    style: TextStyle(
                         fontSize: 11,
                         fontWeight: FontWeight.w500,
                         color: AppColors.slate500,
@@ -864,12 +914,12 @@ class _ManualOrderGroup extends StatelessWidget {
             ),
           ),
           Container(
-            color: Colors.white,
-            padding: const EdgeInsets.all(10),
+            color: AppColors.surface,
+            padding: EdgeInsets.all(10),
             child: Column(
               children: [
                 for (int i = 0; i < recs.length; i++) ...[
-                  if (i > 0) const SizedBox(height: 8),
+                  if (i > 0) SizedBox(height: 8),
                   _RecCard(
                     rec: recs[i],
                     encounterId: encounterId,
@@ -894,7 +944,7 @@ class _RecCard extends ConsumerStatefulWidget {
   final bool manual;
   final ModalSummary? modal; // 해당 모달의 raw 결과 (검사결과지 버튼이 사용)
   final PatientInfo patient; // 인적사항 + subject_id (검사결과지 헤더 + CXR 이미지용)
-  const _RecCard({
+  _RecCard({
     required this.rec,
     required this.encounterId,
     required this.patient,
@@ -916,7 +966,7 @@ class _RecCardState extends ConsumerState<_RecCard> {
       if (!mounted) return;
       TopNotificationBanner.show(context,
           title: '${widget.rec.modality} 검사 승인 — 분석 시작',
-          duration: const Duration(seconds: 2));
+          duration: Duration(seconds: 2));
     } catch (e) {
       if (!mounted) return;
       TopNotificationBanner.show(context,
@@ -962,7 +1012,7 @@ class _RecCardState extends ConsumerState<_RecCard> {
     };
 
     return Container(
-      padding: const EdgeInsets.all(10),
+      padding: EdgeInsets.all(10),
       decoration: BoxDecoration(
         color: cardBg,
         border: Border.all(color: cardBorder),
@@ -996,31 +1046,31 @@ class _RecCardState extends ConsumerState<_RecCard> {
                           : AppColors.slate600,
                 ),
               ),
-              const SizedBox(width: 8),
+              SizedBox(width: 8),
               Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(r.modality,
-                      style: const TextStyle(
+                      style: TextStyle(
                           fontSize: 13,
                           fontWeight: FontWeight.bold,
                           color: AppColors.slate900,
                           height: 1)),
-                  const SizedBox(height: 2),
+                  SizedBox(height: 2),
                   Text(_label(r.modality),
-                      style: const TextStyle(
+                      style: TextStyle(
                           fontSize: 10, color: AppColors.slate400)),
                 ],
               ),
-              const Spacer(),
+              Spacer(),
               _RecStatusChip(isDone: isDone, isRunning: isRunning),
             ],
           ),
           if (r.reason.isNotEmpty) ...[
-            const SizedBox(height: 6),
+            SizedBox(height: 6),
             Text(
               r.reason,
-              style: const TextStyle(
+              style: TextStyle(
                   fontSize: 11,
                   color: AppColors.slate500,
                   height: 1.4),
@@ -1029,7 +1079,7 @@ class _RecCardState extends ConsumerState<_RecCard> {
             ),
           ],
           if (isDraft) ...[
-            const SizedBox(height: 8),
+            SizedBox(height: 8),
             SizedBox(
               width: double.infinity,
               height: 32,
@@ -1042,8 +1092,8 @@ class _RecCardState extends ConsumerState<_RecCard> {
                       borderRadius: BorderRadius.circular(8)),
                 ),
                 onPressed: _approve,
-                icon: const Icon(Icons.check_circle, size: 14),
-                label: const Text('검사 실행',
+                icon: Icon(Icons.check_circle, size: 14),
+                label: Text('검사 실행',
                     style: TextStyle(
                         fontSize: 11, fontWeight: FontWeight.bold)),
               ),
@@ -1059,7 +1109,7 @@ class _RecCardState extends ConsumerState<_RecCard> {
 class _RecStatusChip extends StatelessWidget {
   final bool isDone;
   final bool isRunning;
-  const _RecStatusChip({required this.isDone, required this.isRunning});
+  _RecStatusChip({required this.isDone, required this.isRunning});
 
   @override
   Widget build(BuildContext context) {
@@ -1072,7 +1122,7 @@ class _RecStatusChip extends StatelessWidget {
             : ('승인 대기', AppColors.purple50, AppColors.purple300,
                 AppColors.purple700, null);
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+      padding: EdgeInsets.symmetric(horizontal: 8, vertical: 3),
       decoration: BoxDecoration(
           color: bg,
           border: Border.all(color: border),
@@ -1082,7 +1132,7 @@ class _RecStatusChip extends StatelessWidget {
         children: [
           if (icon != null) ...[
             Icon(icon, size: 10, color: fg),
-            const SizedBox(width: 3),
+            SizedBox(width: 3),
           ],
           Text(label,
               style: TextStyle(
@@ -1097,11 +1147,11 @@ class _RecStatusChip extends StatelessWidget {
 
 // 모든 권고 완료 안내
 class _AllDoneNotice extends StatelessWidget {
-  const _AllDoneNotice();
+  _AllDoneNotice();
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.all(12),
+      padding: EdgeInsets.all(12),
       decoration: BoxDecoration(
         color: AppColors.emerald50,
         border: Border.all(color: AppColors.emerald300),
@@ -1110,13 +1160,13 @@ class _AllDoneNotice extends StatelessWidget {
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Icon(Icons.check_circle,
+          Icon(Icons.check_circle,
               color: AppColors.emerald600, size: 18),
-          const SizedBox(width: 8),
+          SizedBox(width: 8),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
-              children: const [
+              children: [
                 Text('모든 권장 검사 완료',
                     style: TextStyle(
                         fontSize: 12,
@@ -1144,7 +1194,7 @@ class _AllDoneNotice extends StatelessWidget {
 class _ModalResultsSection extends StatelessWidget {
   final Map<String, ModalSummary> modalResults;
   final PatientInfo patient;
-  const _ModalResultsSection({
+  _ModalResultsSection({
     required this.modalResults,
     required this.patient,
   });
@@ -1214,9 +1264,9 @@ class _ModalResultsSection extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 6),
+          padding: EdgeInsets.symmetric(horizontal: 4, vertical: 6),
           child: Row(
-            children: const [
+            children: [
               Icon(Icons.science_outlined,
                   size: 14, color: AppColors.slate600),
               SizedBox(width: 6),
@@ -1230,12 +1280,12 @@ class _ModalResultsSection extends StatelessWidget {
         ),
         if (modalResults.isEmpty)
           Container(
-            padding: const EdgeInsets.all(14),
+            padding: EdgeInsets.all(14),
             decoration: BoxDecoration(
-                color: Colors.white,
+                color: AppColors.surface,
                 border: Border.all(color: AppColors.slate300),
                 borderRadius: BorderRadius.circular(4)),
-            child: const Text(
+            child: Text(
               '아직 완료된 검사 없음',
               style: TextStyle(fontSize: 11, color: AppColors.slate500),
             ),
@@ -1243,9 +1293,9 @@ class _ModalResultsSection extends StatelessWidget {
         else
           for (final m in modalResults.values) ...[
             Container(
-              margin: const EdgeInsets.only(bottom: 8),
+              margin: EdgeInsets.only(bottom: 8),
               decoration: BoxDecoration(
-                  color: Colors.white,
+                  color: AppColors.surface,
                   border: Border.all(color: AppColors.slate300),
                   borderRadius: BorderRadius.circular(4)),
               child: Column(
@@ -1253,11 +1303,11 @@ class _ModalResultsSection extends StatelessWidget {
                 children: [
                   // 상단 — modality 뱃지 + 라벨 + 검사결과지 버튼
                   Padding(
-                    padding: const EdgeInsets.fromLTRB(10, 10, 10, 6),
+                    padding: EdgeInsets.fromLTRB(10, 10, 10, 6),
                     child: Row(
                       children: [
                         Container(
-                          padding: const EdgeInsets.symmetric(
+                          padding: EdgeInsets.symmetric(
                               horizontal: 8, vertical: 3),
                           decoration: BoxDecoration(
                             color: m.isDone
@@ -1266,19 +1316,19 @@ class _ModalResultsSection extends StatelessWidget {
                             borderRadius: BorderRadius.circular(2),
                           ),
                           child: Text(m.modality,
-                              style: const TextStyle(
+                              style: TextStyle(
                                   color: Colors.white,
                                   fontSize: 11,
                                   fontWeight: FontWeight.bold)),
                         ),
-                        const SizedBox(width: 8),
+                        SizedBox(width: 8),
                         Icon(_icon(m.modality),
                             size: 14, color: AppColors.slate600),
-                        const SizedBox(width: 4),
+                        SizedBox(width: 4),
                         Expanded(
                           child: Text(
                             _label(m.modality),
-                            style: const TextStyle(
+                            style: TextStyle(
                                 fontSize: 13,
                                 fontWeight: FontWeight.bold,
                                 color: AppColors.slate900),
@@ -1288,20 +1338,20 @@ class _ModalResultsSection extends StatelessWidget {
                           TextButton.icon(
                             onPressed: () => _openSheet(context, m),
                             style: TextButton.styleFrom(
-                              padding: const EdgeInsets.symmetric(
+                              padding: EdgeInsets.symmetric(
                                   horizontal: 10, vertical: 4),
                               minimumSize: Size.zero,
                               tapTargetSize:
                                   MaterialTapTargetSize.shrinkWrap,
                               foregroundColor: AppColors.vunoCyanDim,
-                              side: const BorderSide(
+                              side: BorderSide(
                                   color: AppColors.vunoCyanDim),
                               shape: RoundedRectangleBorder(
                                   borderRadius: BorderRadius.circular(8)),
                             ),
-                            icon: const Icon(Icons.description_outlined,
+                            icon: Icon(Icons.description_outlined,
                                 size: 12),
-                            label: const Text('검사결과지',
+                            label: Text('검사결과지',
                                 style: TextStyle(
                                     fontSize: 10,
                                     fontWeight: FontWeight.bold)),
@@ -1312,10 +1362,10 @@ class _ModalResultsSection extends StatelessWidget {
                   // 하단 — 한 줄 요약
                   Padding(
                     padding:
-                        const EdgeInsets.fromLTRB(10, 0, 10, 10),
+                        EdgeInsets.fromLTRB(10, 0, 10, 10),
                     child: Text(
                       m.summary ?? '결과 없음',
-                      style: const TextStyle(
+                      style: TextStyle(
                           fontSize: 12,
                           color: AppColors.slate600,
                           height: 1.4),
@@ -1334,14 +1384,14 @@ class _ModalResultsSection extends StatelessWidget {
 class _PanelFooter extends StatelessWidget {
   final bool disabled;
   final VoidCallback onOpenReport;
-  const _PanelFooter({required this.disabled, required this.onOpenReport});
+  _PanelFooter({required this.disabled, required this.onOpenReport});
 
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.all(12),
-      decoration: const BoxDecoration(
-        color: Colors.white,
+      padding: EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: AppColors.surface,
         border: Border(top: BorderSide(color: AppColors.slate200)),
       ),
       child: Column(
@@ -1359,28 +1409,28 @@ class _PanelFooter extends StatelessWidget {
                     borderRadius: BorderRadius.circular(8)),
               ),
               onPressed: disabled ? null : onOpenReport,
-              icon: const Icon(Icons.chevron_right, size: 18),
+              icon: Icon(Icons.chevron_right, size: 18),
               label: Text(
                 disabled ? '검사 진행 중 — 결과 대기' : 'AI 결과 보기',
-                style: const TextStyle(
+                style: TextStyle(
                     fontSize: 15, fontWeight: FontWeight.bold),
               ),
             ),
           ),
           if (disabled) ...[
-            const SizedBox(height: 6),
+            SizedBox(height: 6),
             SizedBox(
               width: double.infinity,
               height: 32,
               child: OutlinedButton(
                 style: OutlinedButton.styleFrom(
                   foregroundColor: AppColors.slate600,
-                  side: const BorderSide(color: AppColors.slate300),
+                  side: BorderSide(color: AppColors.slate300),
                   shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(8)),
                 ),
                 onPressed: onOpenReport,
-                child: const Text('의사 직권으로 소견서 생성 →',
+                child: Text('의사 직권으로 소견서 생성 →',
                     style: TextStyle(
                         fontSize: 11, fontWeight: FontWeight.bold)),
               ),
@@ -1393,14 +1443,14 @@ class _PanelFooter extends StatelessWidget {
 }
 
 class _LoadingCard extends StatelessWidget {
-  const _LoadingCard();
+  _LoadingCard();
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.all(24),
+      padding: EdgeInsets.all(24),
       alignment: Alignment.center,
       child: Column(
-        children: const [
+        children: [
           CircularProgressIndicator(strokeWidth: 2),
           SizedBox(height: 10),
           Text('AI 권고를 불러오는 중…',
@@ -1414,29 +1464,29 @@ class _LoadingCard extends StatelessWidget {
 class _ErrorView extends StatelessWidget {
   final String message;
   final VoidCallback onRetry;
-  const _ErrorView({required this.message, required this.onRetry});
+  _ErrorView({required this.message, required this.onRetry});
   @override
   Widget build(BuildContext context) {
     return Center(
       child: Padding(
-        padding: const EdgeInsets.all(24),
+        padding: EdgeInsets.all(24),
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            const Icon(Icons.cloud_off,
+            Icon(Icons.cloud_off,
                 size: 48, color: AppColors.slate300),
-            const SizedBox(height: 12),
-            const Text('데이터 로딩 실패',
+            SizedBox(height: 12),
+            Text('데이터 로딩 실패',
                 style: TextStyle(
                     fontWeight: FontWeight.bold,
                     color: AppColors.slate700)),
-            const SizedBox(height: 4),
+            SizedBox(height: 4),
             Text(message,
-                style: const TextStyle(
+                style: TextStyle(
                     fontSize: 11, color: AppColors.slate500),
                 textAlign: TextAlign.center),
-            const SizedBox(height: 16),
-            OutlinedButton(onPressed: onRetry, child: const Text('재시도')),
+            SizedBox(height: 16),
+            OutlinedButton(onPressed: onRetry, child: Text('재시도')),
           ],
         ),
       ),

@@ -6,12 +6,12 @@ import {
 } from "lucide-react";
 import { AppShell } from "../../components/v2/AppShell";
 import { cn } from "../../lib/cn";
-import { KTAS_META, type KTAS, type Sex, PAST_HISTORY_LABELS, type PastHistoryCode } from "../../types/triage";
+import { KTAS_META, type KTAS, type Sex, PAST_HISTORY_LABELS, type PastHistoryCode, type ChiefComplaint } from "../../types/triage";
 import {
-  DEMO_PATIENTS, getAllPatients, isLivePatient, registerLivePatient,
+  DEMO_PATIENTS, getLivePatients, isLivePatient, registerLivePatient,
   setCurrentPatientId, getLocalReportStatus, type DemoPatient,
 } from "../../lib/v2/demoStore";
-import { submitTriage } from "../../lib/v2/api";
+import { submitTriage, listEncounters, type ReportStatus } from "../../lib/v2/api";
 import { useSpeechRecognition } from "../../lib/v2/speech";
 import { parseTriageSpeech } from "../../lib/v2/triageVoiceParse";
 
@@ -36,20 +36,49 @@ function patientHref(p: DemoPatient): string {
   const q = isLivePatient(p.id) ? `?encounter_id=${p.id}` : "";
   return examOf(p) === "done" ? `/demo/patient/${p.id}/report${q}` : `/demo/patient/${p.id}${q}`;
 }
-// 환자 목록 상태 — 검사대기 / 검사완료 / 소견완료 셋 중 하나
-function statusOf(p: DemoPatient): { label: string; cls: string } {
-  const local = getLocalReportStatus(p.id);
-  if (local === "signed" || local === "amended")
-    return { label: "소견완료", cls: "bg-emerald-50 text-emerald-700 border-emerald-200 dark:bg-emerald-500/15 dark:text-emerald-300 dark:border-emerald-500/40" };
+// 환자 목록 상태 — 알림 패널(NotificationsDropdown)과 동일 단계로 표시.
+// backendReport: /encounters/list 의 report_status (실시간). 있으면 우선, 없으면 로컬/aiStatus.
+//   소견 완료(signed) / 검토 중(reviewed) / 소견 생성 완료·확정 대기(preliminary)
+//   / 검사 완료(소견서 미생성) / 분석 중 / 검사 대기
+function statusOf(p: DemoPatient, backendReport?: ReportStatus | null): { label: string; cls: string } {
+  const rep = backendReport ?? getLocalReportStatus(p.id);
+  if (rep === "signed" || rep === "amended")
+    return { label: "소견 완료", cls: "bg-emerald-50 text-emerald-700 border-emerald-200 dark:bg-emerald-500/15 dark:text-emerald-300 dark:border-emerald-500/40" };
+  if (rep === "reviewed")
+    return { label: "검토 중", cls: "bg-purple-50 text-purple-700 border-purple-200 dark:bg-purple-500/15 dark:text-purple-300 dark:border-purple-500/40" };
+  // 소견서가 생성된(preliminary) 경우 — 알림과 동일한 파란 배지
+  if (rep === "preliminary")
+    return { label: "소견 생성 완료 · 확정 대기", cls: "bg-blue-50 text-blue-700 border-blue-200 dark:bg-blue-500/15 dark:text-blue-300 dark:border-blue-500/40" };
+  // 소견서 미생성 + AI 분석 완료 = 검사 완료
   if (p.aiStatus === "done")
-    return { label: "검사완료", cls: "bg-blue-50 text-blue-700 border-blue-200 dark:bg-blue-500/15 dark:text-blue-300 dark:border-blue-500/40" };
-  return { label: "검사대기", cls: "bg-slate-100 text-slate-500 border-slate-200 dark:bg-vuno-bg dark:text-vuno-muted dark:border-vuno-border" };
+    return { label: "검사 완료", cls: "bg-emerald-50 text-emerald-700 border-emerald-200 dark:bg-emerald-500/15 dark:text-emerald-300 dark:border-emerald-500/40" };
+  if (p.aiStatus === "analyzing")
+    return { label: "분석 중", cls: "bg-amber-50 text-amber-700 border-amber-200 dark:bg-amber-500/15 dark:text-amber-300 dark:border-amber-500/40" };
+  return { label: "검사 대기", cls: "bg-slate-100 text-slate-500 border-slate-200 dark:bg-vuno-bg dark:text-vuno-muted dark:border-vuno-border" };
 }
 function hhmm(iso: string): string {
   const d = new Date(iso);
   if (isNaN(d.getTime())) return "—";
   return d.toLocaleTimeString("ko-KR", { hour: "2-digit", minute: "2-digit", hour12: false });
 }
+
+// 접수 대기열을 채우는 mock 환자들 — 핵심 테스트 케이스(DEMO_CASES_4) 아래로 붙어 큐를 채운다.
+// 클릭 시 폼이 자동으로 채워진다(데모용). 실제 백엔드 라우팅은 핵심 케이스만 사용.
+const mqTime = (min: number) => new Date(Date.now() - min * 60000).toISOString();
+const MOCK_QUEUE: DemoPatient[] = [
+  { id: "Q-101", mrn: "M2026-1101", name: "최영호", age: 58, sex: "M", ktas: 2, chief: "갑작스러운 어지럼과 좌측 팔 위약", registeredAt: mqTime(3),  arrivedAt: mqTime(4),  ecg: "pending", cxr: "pending", lab: "pending", aiStatus: "pending", vitals: { sbp: 162, dbp: 98, hr: 90,  rr: 18, spo2: 96, bt: 36.7 } },
+  { id: "Q-102", mrn: "M2026-1102", name: "한지민", age: 41, sex: "F", ktas: 3, chief: "발열·기침 3일째",            registeredAt: mqTime(7),  arrivedAt: mqTime(9),  ecg: "pending", cxr: "pending", lab: "pending", aiStatus: "pending", vitals: { sbp: 118, dbp: 74, hr: 98,  rr: 20, spo2: 97, bt: 38.4 } },
+  { id: "Q-103", mrn: "M2026-1103", name: "오세훈", age: 67, sex: "M", ktas: 2, chief: "호흡곤란 악화",              registeredAt: mqTime(11), arrivedAt: mqTime(13), ecg: "pending", cxr: "pending", lab: "pending", aiStatus: "pending", vitals: { sbp: 138, dbp: 84, hr: 104, rr: 26, spo2: 90, bt: 36.9 } },
+  { id: "Q-104", mrn: "M2026-1104", name: "윤서연", age: 29, sex: "F", ktas: 4, chief: "복통·구토",                registeredAt: mqTime(15), arrivedAt: mqTime(17), ecg: "pending", cxr: "pending", lab: "pending", aiStatus: "pending", vitals: { sbp: 112, dbp: 70, hr: 88,  rr: 16, spo2: 99, bt: 37.1 } },
+  { id: "Q-105", mrn: "M2026-1105", name: "강민재", age: 73, sex: "M", ktas: 1, chief: "의식 저하",                registeredAt: mqTime(18), arrivedAt: mqTime(20), ecg: "pending", cxr: "pending", lab: "pending", aiStatus: "pending", vitals: { sbp: 95,  dbp: 55, hr: 120, rr: 24, spo2: 88, bt: 35.6 } },
+  { id: "Q-106", mrn: "M2026-1106", name: "임채원", age: 35, sex: "F", ktas: 3, chief: "두통·시야 흐림",            registeredAt: mqTime(22), arrivedAt: mqTime(24), ecg: "pending", cxr: "pending", lab: "pending", aiStatus: "pending", vitals: { sbp: 145, dbp: 92, hr: 82,  rr: 16, spo2: 98, bt: 36.6 } },
+  { id: "Q-107", mrn: "M2026-1107", name: "조현우", age: 52, sex: "M", ktas: 3, chief: "허리 통증·하지 저림",        registeredAt: mqTime(27), arrivedAt: mqTime(29), ecg: "pending", cxr: "pending", lab: "pending", aiStatus: "pending", vitals: { sbp: 128, dbp: 80, hr: 76,  rr: 15, spo2: 98, bt: 36.8 } },
+  { id: "Q-108", mrn: "M2026-1108", name: "신유나", age: 24, sex: "F", ktas: 4, chief: "발목 부종·외상",            registeredAt: mqTime(31), arrivedAt: mqTime(33), ecg: "pending", cxr: "pending", lab: "pending", aiStatus: "pending", vitals: { sbp: 116, dbp: 72, hr: 84,  rr: 14, spo2: 99, bt: 36.5 } },
+  { id: "Q-109", mrn: "M2026-1109", name: "배성훈", age: 60, sex: "M", ktas: 2, chief: "흉부 압박감 간헐적",         registeredAt: mqTime(36), arrivedAt: mqTime(38), ecg: "pending", cxr: "pending", lab: "pending", aiStatus: "pending", vitals: { sbp: 150, dbp: 95, hr: 88,  rr: 18, spo2: 95, bt: 36.7 } },
+  { id: "Q-110", mrn: "M2026-1110", name: "문가영", age: 47, sex: "F", ktas: 3, chief: "심계항진·불안감",           registeredAt: mqTime(40), arrivedAt: mqTime(42), ecg: "pending", cxr: "pending", lab: "pending", aiStatus: "pending", vitals: { sbp: 124, dbp: 78, hr: 112, rr: 18, spo2: 98, bt: 36.9 } },
+  { id: "Q-111", mrn: "M2026-1111", name: "권태경", age: 38, sex: "M", ktas: 4, chief: "찰과상·경미 출혈",          registeredAt: mqTime(45), arrivedAt: mqTime(47), ecg: "pending", cxr: "pending", lab: "pending", aiStatus: "pending", vitals: { sbp: 120, dbp: 76, hr: 72,  rr: 14, spo2: 99, bt: 36.6 } },
+  { id: "Q-112", mrn: "M2026-1112", name: "남지호", age: 81, sex: "F", ktas: 2, chief: "낙상 후 고관절 통증",        registeredAt: mqTime(52), arrivedAt: mqTime(54), ecg: "pending", cxr: "pending", lab: "pending", aiStatus: "pending", vitals: { sbp: 142, dbp: 86, hr: 94,  rr: 18, spo2: 96, bt: 36.4 } },
+];
 
 export default function TriagePageV2() {
   const nav = useNavigate();
@@ -71,6 +100,8 @@ export default function TriagePageV2() {
 
   /* ── 임상 ── */
   const [chief, setChief] = useState("");
+  // 영문 주호소 코드 (데모 케이스 선택 시) — 백엔드 CC Map 라우팅용
+  const [chiefCode, setChiefCode] = useState<ChiefComplaint | undefined>(undefined);
   const [ktas, setKtas] = useState<KTAS>(3);
   const [admission, setAdmission] = useState(() => new Date().toISOString().slice(0, 16));
   const [allergies, setAllergies] = useState("");
@@ -93,8 +124,26 @@ export default function TriagePageV2() {
   const [selectedAiVerdict, setSelectedAiVerdict] = useState<DemoPatient["aiVerdict"]>(undefined);
 
   const caseList = useMemo(() => DEMO_PATIENTS.filter((p) => p.mimic?.subject_id), []);
-  const allPatients = getAllPatients();
-  const recent = allPatients.slice(0, 5);
+  // 접수 대기열 = 핵심 테스트 케이스(백엔드 실판독) + mock 환자들로 아래까지 채움
+  const queue = useMemo(() => [...caseList, ...MOCK_QUEUE], [caseList]);
+  // "최근 등록"·"환자 목록" = 실제 트리아지로 등록된 라이브 환자만 (테스트/데모 케이스 제외).
+  // 테스트 케이스는 좌측 "접수 대기열"에만 노출. DB·세션 비우면 비고, 트리아지하면 뜸.
+  const livePatients = getLivePatients();
+  const allPatients = livePatients;
+  const recent = livePatients.slice(0, 5);
+
+  // 백엔드 실시간 상태(report_status) 폴링 → 워크리스트 배지 자동 갱신 (검사대기→검사완료→소견완료)
+  const [statusMap, setStatusMap] = useState<Map<string, ReportStatus | null>>(new Map());
+  useEffect(() => {
+    let alive = true;
+    const load = async () => {
+      const list = await listEncounters("active", 50);
+      if (alive && list) setStatusMap(new Map(list.map((e) => [e.encounter_id, e.report_status])));
+    };
+    load();
+    const t = setInterval(load, 10_000);
+    return () => { alive = false; clearInterval(t); };
+  }, []);
 
   const EMPTY_HX: Record<PastHistoryCode, boolean> = {
     HTN: false, DM: false, CAD: false, CVA: false, COPD: false,
@@ -105,7 +154,7 @@ export default function TriagePageV2() {
   function reset() {
     setSubjectId(""); setName(""); setAge(""); setSex("M");
     setHr(""); setSbp(""); setDbp(""); setRr(""); setSpo2(""); setBt(""); setPain("");
-    setChief(""); setKtas(3); setAllergies(""); setMeds(""); setNotes("");
+    setChief(""); setChiefCode(undefined); setKtas(3); setAllergies(""); setMeds(""); setNotes("");
     setAdmission(new Date().toISOString().slice(0, 16));
     setPastHx({ ...EMPTY_HX });
     setSelectedId(null); setSelectedMimic(null);
@@ -124,7 +173,7 @@ export default function TriagePageV2() {
     setSex(p.sex);
     setHr(p.vitals.hr ?? ""); setSbp(p.vitals.sbp ?? ""); setDbp(p.vitals.dbp ?? "");
     setRr(p.vitals.rr ?? ""); setSpo2(p.vitals.spo2 ?? ""); setBt(p.vitals.bt ?? "");
-    setChief(p.chief); setKtas(p.ktas);
+    setChief(p.chief); setChiefCode(p.chiefCode); setKtas(p.ktas);
     setAllergies(p.allergies ?? ""); setMeds(p.medications ?? ""); setNotes(p.notes ?? "");
     const hx = { ...EMPTY_HX };
     (p.pastHistory ?? []).forEach((code) => { hx[code] = true; });
@@ -187,7 +236,7 @@ export default function TriagePageV2() {
     };
     const pastHistory = PAST_HX_CODES.filter((c) => pastHx[c]);
     const result = await submitTriage({
-      name: name || subjectId, age: Number(age), sex, vitals: vitalsInput, chief,
+      name: name || subjectId, age: Number(age), sex, vitals: vitalsInput, chief, chiefCode,
       pastHistory, allergies, medications: meds, notes, mimic: selectedMimic,
     });
     setSubmitting(false);
@@ -238,19 +287,19 @@ export default function TriagePageV2() {
   return (
     <AppShell>
       <div className="bg-slate-100 dark:bg-vuno-bg text-slate-900 dark:text-white min-h-[calc(100vh-3.5rem)]">
-        <div className="grid grid-cols-1 lg:grid-cols-[260px_1fr_320px] lg:items-start">
+        <div className="grid grid-cols-1 lg:grid-cols-[300px_1fr_300px] lg:items-start">
 
-          {/* ── 좌: 접수 대기열 + 최근 등록 (고정) ── */}
+          {/* ── 좌: 접수 대기열 (고정) ── */}
           <aside className={cn("border-r border-slate-200 dark:border-vuno-border bg-white dark:bg-vuno-surface", stickyCls)}>
             {/* 헤더 — 상단 고정(flush) */}
             <div className="flex items-center justify-between px-4 py-3 border-b border-slate-200 dark:border-vuno-border flex-shrink-0">
               <h4 className="text-[16px] font-bold">접수 대기열</h4>
-              <span className="px-2.5 py-1 rounded text-[12px] font-bold bg-brand-50 text-brand-700 dark:bg-brand-500/15 dark:text-brand-200">{caseList.length}</span>
+              <span className="px-2.5 py-1 rounded text-[12px] font-bold bg-brand-50 text-brand-700 dark:bg-brand-500/15 dark:text-brand-200">{queue.length}</span>
             </div>
             {/* 본문 — 아래로 채움(내부 스크롤) */}
             <div className="flex-1 min-h-0 lg:overflow-y-auto p-4">
             <div className="space-y-2">
-              {caseList.map((p) => (
+              {queue.map((p) => (
                 <button
                   key={p.id}
                   type="button"
@@ -266,36 +315,10 @@ export default function TriagePageV2() {
                     <span className="text-[14px] font-bold">{p.name} · {p.sex === "M" ? "M" : "F"}{p.age}</span>
                     <span className="text-[12px] font-numeric text-slate-400 dark:text-vuno-dim">{hhmm(p.registeredAt)}</span>
                   </div>
-                  <div className="text-[12px] text-slate-500 dark:text-vuno-muted mt-0.5 truncate">{p.chief}</div>
+                  <div className="text-[15px] font-medium text-slate-700 dark:text-vuno-muted mt-1 leading-snug">{p.chief}</div>
                   <div className="text-[12px] font-numeric font-bold text-brand-600 mt-1">#{regNo(p)}</div>
                 </button>
               ))}
-            </div>
-
-            <div className="h-px bg-slate-200 dark:bg-vuno-border my-4" />
-            <h4 className="text-[16px] font-bold mb-3">최근 등록</h4>
-            <div className="space-y-2">
-              {recent.map((p) => {
-                const meta = KTAS_META[p.ktas];
-                return (
-                  <button
-                    key={p.id}
-                    type="button"
-                    onClick={() => selectPatient(p)}
-                    className="w-full text-left rounded-lg border border-slate-200 bg-slate-50 hover:bg-white hover:border-slate-300 dark:border-vuno-border dark:bg-vuno-bg dark:hover:bg-vuno-elevated p-2.5 transition-colors"
-                  >
-                    <div className="flex items-center justify-between">
-                      <span className="text-[14px] font-bold">{p.name} · {p.sex === "M" ? "M" : "F"}{p.age}</span>
-                      <span className="text-[12px] font-numeric text-slate-400 dark:text-vuno-dim">{hhmm(p.registeredAt)}</span>
-                    </div>
-                    <div className="flex items-center gap-1.5 mt-0.5">
-                      <span className={cn("px-1.5 py-0.5 rounded text-[11px] font-bold text-white", meta.bg)}>{p.ktas}</span>
-                      <span className="text-[12px] text-slate-500 dark:text-vuno-muted truncate">{p.chief}</span>
-                    </div>
-                    <div className="text-[12px] font-numeric font-bold text-brand-600 mt-1">#{regNo(p)}</div>
-                  </button>
-                );
-              })}
             </div>
             </div>
           </aside>
@@ -405,7 +428,7 @@ export default function TriagePageV2() {
             {/* 주증상 */}
             <div className={cardCls}>
               <h3 className="text-[16px] font-bold flex items-center gap-2 mb-4"><MessageCircle className="h-5 w-5 text-brand-600 dark:text-brand-300" /> 주증상 (Chief Complaint) <span className="text-brand-600">*</span></h3>
-              <textarea value={chief} onChange={(e) => setChief(e.target.value)} rows={3} placeholder="예: 흉통 2시간 전 발생, 좌측 팔로 방사, 발한 동반" className={cn(fieldCls, "h-auto py-2.5 resize-y")} />
+              <textarea value={chief} onChange={(e) => { setChief(e.target.value); setChiefCode(undefined); }} rows={3} placeholder="예: 흉통 2시간 전 발생, 좌측 팔로 방사, 발한 동반" className={cn(fieldCls, "h-auto py-2.5 resize-y")} />
               <div className="flex gap-2 flex-wrap mt-3">
                 {["흉통", "호흡곤란", "복통", "두통", "의식 저하", "외상", "발열"].map((c) => (
                   <button key={c} type="button" onClick={() => setChief((v) => v ? `${v}, ${c}` : c)} className="px-3 py-1.5 rounded-full text-[13px] bg-slate-100 text-slate-600 hover:bg-slate-200 dark:bg-vuno-bg dark:text-vuno-muted dark:hover:bg-vuno-elevated transition-colors">{c}</button>
@@ -415,7 +438,7 @@ export default function TriagePageV2() {
 
             {/* KTAS */}
             <div className={cardCls}>
-              <h3 className="text-[16px] font-bold flex items-center gap-2 mb-4"><Flame className="h-5 w-5 text-urgent" /> KTAS 등급 <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded text-[12px] font-bold bg-ai-accent/10 text-ai-accent dark:bg-ai-accent/15 dark:text-violet-300"><Sparkles className="h-3.5 w-3.5" /> AI 추론: {ktas}</span></h3>
+              <h3 className="text-[16px] font-bold flex items-center gap-2 mb-4"><Flame className="h-5 w-5 text-urgent" /> KTAS 등급</h3>
               <div className="grid grid-cols-5 gap-2">
                 {KTAS_OPTS.map(({ k, en, t }) => {
                   const on = ktas === k;
@@ -474,7 +497,7 @@ export default function TriagePageV2() {
             <div className="space-y-2">
               {allPatients.map((p) => {
                 const meta = KTAS_META[p.ktas];
-                const st = statusOf(p);
+                const st = statusOf(p, statusMap.get(p.id));
                 return (
                   <button
                     key={p.id}
@@ -490,8 +513,8 @@ export default function TriagePageV2() {
                     </div>
                     <div className="text-[12px] text-slate-500 dark:text-vuno-muted mt-1 truncate">{p.chief}</div>
                     <div className="flex items-center justify-between mt-1.5">
-                      <span className="text-[13px] font-numeric font-bold text-brand-600">#{regNo(p)}</span>
-                      <span className={cn("px-2 py-0.5 rounded text-[11px] font-bold border", st.cls)}>{st.label}</span>
+                      <span className="text-[13px] font-numeric font-bold text-brand-600 shrink-0">#{regNo(p)}</span>
+                      <span className={cn("px-2 py-0.5 rounded text-[11px] font-bold border whitespace-nowrap", st.cls)}>{st.label}</span>
                     </div>
                   </button>
                 );

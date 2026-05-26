@@ -16,7 +16,7 @@ import 'lab_clinical_sheet.dart';
 /// 결과가 없으면 버튼 대신 "대기" muted 상태. 하단에 "AI 종합소견 생성" 버튼.
 class PatientResultsPage extends ConsumerWidget {
   final String patientId; // encounter_id
-  const PatientResultsPage({super.key, required this.patientId});
+  PatientResultsPage({super.key, required this.patientId});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -26,20 +26,20 @@ class PatientResultsPage extends ConsumerWidget {
       backgroundColor: AppColors.slate50,
       appBar: EmonTopBar(current: 'results', patientId: patientId),
       body: async.when(
-        loading: () => const Center(child: CircularProgressIndicator()),
+        loading: () => Center(child: CircularProgressIndicator()),
         error: (e, _) => _ErrorView(
           message: '$e',
           onRetry: () => ref.invalidate(patientDetailProvider),
         ),
         data: (data) {
-          const modalities = ['ECG', 'CXR', 'LAB'];
+          final modalities = ['ECG', 'CXR', 'LAB'];
           return Column(
             children: [
               Expanded(
                 child: RefreshIndicator(
                   onRefresh: () async => ref.invalidate(patientDetailProvider),
                   child: ListView(
-                    padding: const EdgeInsets.all(12),
+                    padding: EdgeInsets.all(12),
                     children: [
                       for (final m in modalities) ...[
                         _ResultCard(
@@ -49,7 +49,7 @@ class PatientResultsPage extends ConsumerWidget {
                           patient: data.patient,
                           encounterId: patientId,
                         ),
-                        const SizedBox(height: 10),
+                        SizedBox(height: 10),
                       ],
                     ],
                   ),
@@ -77,7 +77,7 @@ class _ResultCard extends StatelessWidget {
   final List<AIRec> recommendations;
   final PatientInfo patient;
   final String encounterId;
-  const _ResultCard({
+  _ResultCard({
     required this.modality,
     required this.modal,
     required this.recommendations,
@@ -123,7 +123,7 @@ class _ResultCard extends StatelessWidget {
         patientId: id,
         waveform: m?.ecgWaveform,
         ecgVitals: m?.ecgVitals,
-        findings: m?.findings ?? const [],
+        findings: m?.findings ?? [],
       );
     } else if (modality == 'CXR') {
       showCxrClinicalSheet(
@@ -135,8 +135,9 @@ class _ResultCard extends StatelessWidget {
         subjectId: patient.subjectId,
         measurements: m?.cxrMeasurements,
         metadata: m?.cxrMetadata,
-        findingsText: m?.cxrFindingsText ?? const [],
-        impression: m?.cxrImpression,
+        // 영어 findings_text 대신 한국어 재구성 소견을 '결론'으로 표시
+        findingsText: [],
+        impression: m?.cxrKoreanSummary,
         summary: m?.summary,
         riskLevel: m?.riskLevel,
       );
@@ -147,7 +148,7 @@ class _ResultCard extends StatelessWidget {
         age: age,
         sex: sex,
         patientId: id,
-        labSummary: m?.labSummary ?? const [],
+        labSummary: m?.labSummary ?? [],
         prognosis6h: m?.prognosis6h,
         summary: m?.summary,
         riskLevel: m?.riskLevel,
@@ -161,13 +162,13 @@ class _ResultCard extends StatelessWidget {
     final hasResult = status == _ModalStatus.done && modal != null;
 
     return Material(
-      color: Colors.white,
+      color: AppColors.surface,
       shape: RoundedRectangleBorder(
-        side: const BorderSide(color: AppColors.slate300),
+        side: BorderSide(color: AppColors.slate300),
         borderRadius: BorderRadius.circular(4),
       ),
       child: Padding(
-        padding: const EdgeInsets.all(12),
+        padding: EdgeInsets.all(12),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -183,38 +184,46 @@ class _ResultCard extends StatelessWidget {
                   ),
                   child: Icon(_icon, size: 15, color: AppColors.brand600),
                 ),
-                const SizedBox(width: 8),
+                SizedBox(width: 8),
                 Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(modality,
-                        style: const TextStyle(
+                        style: TextStyle(
                             fontSize: 13,
                             fontWeight: FontWeight.bold,
                             color: AppColors.slate900,
                             height: 1)),
-                    const SizedBox(height: 2),
+                    SizedBox(height: 2),
                     Text(_label,
-                        style: const TextStyle(
+                        style: TextStyle(
                             fontSize: 10, color: AppColors.slate400)),
                   ],
                 ),
-                const Spacer(),
+                Spacer(),
                 _StatusBadge(status: status),
               ],
             ),
-            const SizedBox(height: 10),
+            SizedBox(height: 10),
             // 본문 — 한 줄 요약 + "검사결과지 보기" 버튼 / "대기" muted
+            // CXR은 영어 출력이라 구조화 소견으로 한국어 재구성(cxrKoreanSummary).
             if (hasResult) ...[
-              if (modal!.summary != null && modal!.summary!.isNotEmpty) ...[
+              if (() {
+                final t = modality == 'CXR'
+                    ? modal!.cxrKoreanSummary
+                    : (modal!.summary ?? '');
+                return t.isNotEmpty;
+              }()) ...[
                 Text(
-                  modal!.summary!,
-                  style: const TextStyle(
+                  modality == 'CXR'
+                      ? modal!.cxrKoreanSummary
+                      : modal!.summary!,
+                  style: TextStyle(
                       fontSize: 12, color: AppColors.slate600, height: 1.4),
-                  maxLines: 3,
+                  maxLines: 4,
                   overflow: TextOverflow.ellipsis,
                 ),
-                const SizedBox(height: 8),
+                SizedBox(height: 8),
               ],
               SizedBox(
                 width: double.infinity,
@@ -228,8 +237,8 @@ class _ResultCard extends StatelessWidget {
                         borderRadius: BorderRadius.circular(8)),
                   ),
                   onPressed: () => _openSheet(context),
-                  icon: const Icon(Icons.description_outlined, size: 14),
-                  label: const Text('검사결과지 보기',
+                  icon: Icon(Icons.description_outlined, size: 14),
+                  label: Text('검사결과지 보기',
                       style: TextStyle(
                           fontSize: 12, fontWeight: FontWeight.bold)),
                 ),
@@ -247,14 +256,14 @@ class _ResultCard extends StatelessWidget {
 class _PendingBody extends StatelessWidget {
   final _ModalStatus status;
   final String modality;
-  const _PendingBody({required this.status, required this.modality});
+  _PendingBody({required this.status, required this.modality});
 
   @override
   Widget build(BuildContext context) {
     final running = status == _ModalStatus.running;
     return Container(
       width: double.infinity,
-      padding: const EdgeInsets.symmetric(vertical: 20, horizontal: 12),
+      padding: EdgeInsets.symmetric(vertical: 20, horizontal: 12),
       decoration: BoxDecoration(
         color: AppColors.slate50,
         border: Border.all(color: AppColors.slate200),
@@ -263,30 +272,30 @@ class _PendingBody extends StatelessWidget {
       child: Column(
         children: [
           if (running)
-            const SizedBox(
+            SizedBox(
               width: 20,
               height: 20,
               child: CircularProgressIndicator(
                   strokeWidth: 2, color: AppColors.amber700),
             )
           else
-            const Icon(Icons.hourglass_empty,
+            Icon(Icons.hourglass_empty,
                 size: 20, color: AppColors.slate400),
-          const SizedBox(height: 8),
+          SizedBox(height: 8),
           Text(
             running ? '$modality 분석 중…' : '$modality 검사 대기',
-            style: const TextStyle(
+            style: TextStyle(
                 fontSize: 12,
                 fontWeight: FontWeight.bold,
                 color: AppColors.slate600),
           ),
-          const SizedBox(height: 2),
+          SizedBox(height: 2),
           Text(
             running
                 ? 'AI 모달 판독이 진행 중입니다.'
                 : 'AI 분석 화면에서 권고를 승인하면 시작됩니다.',
             textAlign: TextAlign.center,
-            style: const TextStyle(fontSize: 11, color: AppColors.slate400),
+            style: TextStyle(fontSize: 11, color: AppColors.slate400),
           ),
         ],
       ),
@@ -299,7 +308,7 @@ enum _ModalStatus { pending, running, done }
 // 상태 뱃지 — padding h8/v3, radius 2, soft 색상 쌍 (emerald/amber/slate)
 class _StatusBadge extends StatelessWidget {
   final _ModalStatus status;
-  const _StatusBadge({required this.status});
+  _StatusBadge({required this.status});
 
   @override
   Widget build(BuildContext context) {
@@ -309,7 +318,7 @@ class _StatusBadge extends StatelessWidget {
       _ModalStatus.pending => ('대기', AppColors.slate100, AppColors.slate500),
     };
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+      padding: EdgeInsets.symmetric(horizontal: 8, vertical: 3),
       decoration: BoxDecoration(
         color: bg,
         borderRadius: BorderRadius.circular(2),
@@ -326,14 +335,14 @@ class _StatusBadge extends StatelessWidget {
 // 하단 푸터 — "AI 종합소견 생성" 버튼
 class _ResultsFooter extends StatelessWidget {
   final VoidCallback onGenerate;
-  const _ResultsFooter({required this.onGenerate});
+  _ResultsFooter({required this.onGenerate});
 
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.all(12),
-      decoration: const BoxDecoration(
-        color: Colors.white,
+      padding: EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: AppColors.surface,
         border: Border(top: BorderSide(color: AppColors.slate300)),
       ),
       child: SizedBox(
@@ -347,8 +356,8 @@ class _ResultsFooter extends StatelessWidget {
                 borderRadius: BorderRadius.circular(8)),
           ),
           onPressed: onGenerate,
-          icon: const Icon(Icons.description_outlined, size: 16),
-          label: const Text('AI 종합소견 생성',
+          icon: Icon(Icons.description_outlined, size: 16),
+          label: Text('AI 종합소견 생성',
               style: TextStyle(fontSize: 15, fontWeight: FontWeight.bold)),
         ),
       ),
@@ -359,28 +368,28 @@ class _ResultsFooter extends StatelessWidget {
 class _ErrorView extends StatelessWidget {
   final String message;
   final VoidCallback onRetry;
-  const _ErrorView({required this.message, required this.onRetry});
+  _ErrorView({required this.message, required this.onRetry});
 
   @override
   Widget build(BuildContext context) {
     return Center(
       child: Padding(
-        padding: const EdgeInsets.all(24),
+        padding: EdgeInsets.all(24),
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            const Icon(Icons.cloud_off, size: 48, color: AppColors.slate300),
-            const SizedBox(height: 12),
-            const Text('데이터 로딩 실패',
+            Icon(Icons.cloud_off, size: 48, color: AppColors.slate300),
+            SizedBox(height: 12),
+            Text('데이터 로딩 실패',
                 style: TextStyle(
                     fontWeight: FontWeight.bold, color: AppColors.slate700)),
-            const SizedBox(height: 4),
+            SizedBox(height: 4),
             Text(message,
-                style: const TextStyle(
+                style: TextStyle(
                     fontSize: 11, color: AppColors.slate500),
                 textAlign: TextAlign.center),
-            const SizedBox(height: 16),
-            OutlinedButton(onPressed: onRetry, child: const Text('재시도')),
+            SizedBox(height: 16),
+            OutlinedButton(onPressed: onRetry, child: Text('재시도')),
           ],
         ),
       ),

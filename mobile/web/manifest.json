@@ -1,11 +1,11 @@
 {
-    "name": "say6_doctor",
-    "short_name": "say6_doctor",
+    "name": "EMON Med®",
+    "short_name": "EMON Med®",
     "start_url": ".",
     "display": "standalone",
     "background_color": "#0175C2",
     "theme_color": "#0175C2",
-    "description": "say-6 doctor mobile app — Flutter PWA for emergency room AI triage",
+    "description": "EMON Med® — 응급실 멀티모달 AI 진단 보조",
     "orientation": "portrait-primary",
     "prefer_related_applications": false,
     "icons": [

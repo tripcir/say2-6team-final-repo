@@ -228,6 +228,10 @@
   to   { opacity: 1; transform: translate3d(0, 0, 0);   filter: blur(0); }
 }
 
+/* modal 미리보기 스캔 스윕 — ECG(가로) / CXR(세로) 라이브 판독 느낌 */
+@keyframes scanSweepX { from { left: -32%; } to { left: 100%; } }
+@keyframes scanSweepY { from { top: -32%; } to { top: 100%; } }
+
 /* fade-up: 뷰포트 진입 시 아래에서 위로 페이드인 */
 .reveal {
   opacity: 0;

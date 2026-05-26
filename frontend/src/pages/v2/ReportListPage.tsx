@@ -18,7 +18,7 @@ const STATUS_META: Record<ReportStatus, { ko: string; cls: string }> = {
   analyzing: { ko: "AI 분석 중", cls: "bg-amber-50 border-amber-300 text-amber-700 dark:bg-amber-500/15 dark:border-amber-500/40 dark:text-amber-300" },
   ready:     { ko: "작성 가능",  cls: "bg-blue-50 border-blue-300 text-blue-700 dark:bg-blue-500/15 dark:border-blue-500/40 dark:text-blue-300" },
   review:    { ko: "검토·서명 대기", cls: "bg-purple-50 border-purple-300 text-purple-700 dark:bg-purple-500/15 dark:border-purple-500/40 dark:text-purple-300" },
-  signed:    { ko: "서명 완료",  cls: "bg-emerald-50 border-emerald-300 text-emerald-700 dark:bg-emerald-500/15 dark:border-emerald-500/40 dark:text-emerald-300" },
+  signed:    { ko: "소견 완료",  cls: "bg-emerald-50 border-emerald-300 text-emerald-700 dark:bg-emerald-500/15 dark:border-emerald-500/40 dark:text-emerald-300" },
 };
 
 // 우선순위: 백엔드 diagnostic_reports.status → 로컬 캐시(데모 환자) → demoStore 추정.
@@ -58,7 +58,7 @@ const FILTER_LABELS: Record<Filter, string> = {
   analyzing: "AI 분석 중",
   ready: "작성 가능",
   review: "검토·서명 대기",
-  signed: "서명 완료",
+  signed: "소견 완료",
 };
 
 export default function ReportListPage() {
@@ -137,7 +137,7 @@ export default function ReportListPage() {
     <AppShell notifications={counts.review}>
       <div className="bg-slate-100 text-slate-900 dark:bg-vuno-bg dark:text-white min-h-[calc(100vh-3.5rem)] lg:grid lg:grid-cols-[390px_1fr] lg:items-stretch">
       {/* 좌: 현재 환자 정보 사이드바 (고정) */}
-      <PatientInfoSidebar patient={getCurrentPatient()} className="hidden lg:block lg:sticky lg:top-14 lg:h-[calc(100vh-3.5rem)] lg:overflow-y-auto" />
+      <PatientInfoSidebar patient={getCurrentPatient()} allowEdit className="hidden lg:block lg:sticky lg:top-14 lg:h-[calc(100vh-3.5rem)] lg:overflow-y-auto" />
       <div className="min-w-0">
       <div className="max-w-[1500px] mx-auto px-6 py-6">
         {/* 헤더 */}

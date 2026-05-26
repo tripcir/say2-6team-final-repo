@@ -6,6 +6,7 @@ import 'package:go_router/go_router.dart';
 import '../../core/api/reports_api.dart';
 import '../../features/notifications/notifications_panel.dart';
 import '../theme/app_theme.dart';
+import '../theme/theme_provider.dart';
 
 /// 웹 AppShell 상단 네비게이션을 모바일로 이식 —
 /// 보라 그라데이션 바 + EMON Med® + 가로 스크롤 탭(각 페이지) + 알림 + 로그아웃.
@@ -17,9 +18,9 @@ class EmonTopBar extends ConsumerWidget implements PreferredSizeWidget {
   const EmonTopBar({super.key, required this.current, this.patientId});
 
   /// iPhone 목업(device.html, ?frame=ios)에서만 상태바 높이만큼 상단 여백 추가 —
-  /// 투명 상태바 오버레이가 워드마크/알림 버튼과 겹치지 않게. 실기기에선 0(SafeArea가 처리).
-  static double get _frameInset =>
-      (kIsWeb && Uri.base.queryParameters['frame'] == 'ios') ? 44.0 : 0.0;
+  /// 웹 아이폰 프레임 데모에서 노치가 워드마크/탭을 가리지 않게 상단 여백.
+  /// 실기기에선 0 (SafeArea가 처리). 로그인 등 EmonTopBar 미사용 페이지는 영향 없음(풀스크린).
+  static double get _frameInset => kIsWeb ? 44.0 : 0.0;
 
   @override
   Size get preferredSize => Size.fromHeight(110 + _frameInset);
@@ -33,27 +34,17 @@ class EmonTopBar extends ConsumerWidget implements PreferredSizeWidget {
       ('AI 분석', pid != null ? '/patient/$pid' : '/worklist', 'analysis'),
       ('AI 결과', pid != null ? '/patient/$pid/results' : '/worklist', 'results'),
       ('AI 종합소견 생성', pid != null ? '/patient/$pid/report' : '/worklist', 'report'),
-      ('종합소견서 목록', '/reports', 'reports'),
       ('운영 모니터링', '/dashboard', 'dashboard'),
     ];
 
+    // 종 배지 — 알림 패널과 동일하게 preliminary + signed + amended 전체 건수
     final count = ref.watch(reportsListProvider).maybeWhen(
-      data: (rows) {
-        int n = 0;
-        for (final r in rows) {
-          if (r.status == 'signed' || r.status == 'amended') continue;
-          final e = r.createdAt == null
-              ? null
-              : DateTime.now().difference(r.createdAt!).inMinutes;
-          final overdue = e != null && e >= 5;
-          if (r.status == 'preliminary' && !overdue) n++;
-          if ((r.status == 'preliminary' || r.status == 'reviewed') && overdue) {
-            n++;
-          }
-          if (r.aiRiskLevel == 'critical') n++;
-        }
-        return n;
-      },
+      data: (rows) => rows
+          .where((r) =>
+              r.status == 'preliminary' ||
+              r.status == 'signed' ||
+              r.status == 'amended')
+          .length,
       orElse: () => 0,
     );
 
@@ -83,6 +74,18 @@ class EmonTopBar extends ConsumerWidget implements PreferredSizeWidget {
                           fontWeight: FontWeight.w800,
                           letterSpacing: 0.5)),
                   const Spacer(),
+                  IconButton(
+                    icon: Icon(
+                      ref.watch(darkModeProvider)
+                          ? Icons.light_mode
+                          : Icons.dark_mode,
+                      color: Colors.white,
+                      size: 20,
+                    ),
+                    tooltip: ref.watch(darkModeProvider) ? '라이트 모드' : '다크 모드',
+                    onPressed: () =>
+                        ref.read(darkModeProvider.notifier).toggle(),
+                  ),
                   _Bell(count: count),
                   IconButton(
                     icon: const Icon(Icons.logout, color: Colors.white, size: 20),

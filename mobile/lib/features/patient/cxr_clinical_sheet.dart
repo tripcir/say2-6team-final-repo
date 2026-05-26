@@ -20,7 +20,7 @@ class CxrClinicalSheet extends StatelessWidget {
   final String? summary;
   final String? riskLevel;
 
-  const CxrClinicalSheet({
+  CxrClinicalSheet({
     super.key,
     this.patientName = '환자',
     this.age = 0,
@@ -39,7 +39,7 @@ class CxrClinicalSheet extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final m = measurements ?? const {};
+    final m = measurements ?? {};
     final ctr = m['ctr'] as num?;
     final ctrStatus = m['ctr_status'] as String?;
     final lungArea = m['lung_area_ratio'] as num?;
@@ -48,12 +48,12 @@ class CxrClinicalSheet extends StatelessWidget {
     final leftCpAngle = m['left_cp_angle'] as num?;
     final rightCpAngle = m['right_cp_angle'] as num?;
 
-    // backend가 S3에서 받아 스트리밍 — 웹의 /assets/cxr/{id}와 동일 경로.
-    // API base는 dio config의 apiBaseUrl 재사용 (운영 빌드 시 --dart-define으로 override).
-    final imageUrl = subjectId != null ? '$apiBaseUrl/assets/cxr/$subjectId' : null;
+    // backend가 S3에서 받아 스트리밍 — /mimic/cxr/{id} (CloudFront가 /mimic/* → ALB 라우팅).
+    // (/assets/* 는 CloudFront가 S3로 보내 이미지가 안 떠서 /mimic/cxr 로 변경 — 웹과 동일.)
+    final imageUrl = subjectId != null ? '$apiBaseUrl/mimic/cxr/$subjectId' : null;
 
     return Container(
-      color: Colors.white,
+      color: AppColors.surface,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
@@ -77,12 +77,12 @@ class CxrClinicalSheet extends StatelessWidget {
 
           // 측정값
           Padding(
-            padding: const EdgeInsets.all(12),
+            padding: EdgeInsets.all(12),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const _SectionLabel('측정값 (Measurements)'),
-                const SizedBox(height: 6),
+                _SectionLabel('측정값 (Measurements)'),
+                SizedBox(height: 6),
                 _MeasureRow(
                   k: '심흉곽비 (CTR)',
                   v: ctr != null ? ctr.toStringAsFixed(2) : '—',
@@ -120,25 +120,25 @@ class CxrClinicalSheet extends StatelessWidget {
           if (findingsText.isNotEmpty) ...[
             Padding(
               padding:
-                  const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+                  EdgeInsets.symmetric(horizontal: 12, vertical: 4),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const _SectionLabel('판독 소견 (Findings)'),
-                  const SizedBox(height: 6),
+                  _SectionLabel('판독 소견 (Findings)'),
+                  SizedBox(height: 6),
                   for (final f in findingsText)
                     Padding(
-                      padding: const EdgeInsets.only(bottom: 4),
+                      padding: EdgeInsets.only(bottom: 4),
                       child: Row(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          const Text('· ',
+                          Text('· ',
                               style: TextStyle(
                                   color: AppColors.vunoCyanDim,
                                   fontWeight: FontWeight.bold)),
                           Expanded(
                             child: Text(f,
-                                style: const TextStyle(
+                                style: TextStyle(
                                     fontSize: 11,
                                     color: AppColors.slate700,
                                     height: 1.5)),
@@ -154,8 +154,8 @@ class CxrClinicalSheet extends StatelessWidget {
           // 결론
           if (impression != null && impression!.isNotEmpty)
             Container(
-              margin: const EdgeInsets.all(12),
-              padding: const EdgeInsets.all(10),
+              margin: EdgeInsets.all(12),
+              padding: EdgeInsets.all(10),
               decoration: BoxDecoration(
                 color: AppColors.slate50,
                 border: Border.all(color: AppColors.slate300),
@@ -164,10 +164,10 @@ class CxrClinicalSheet extends StatelessWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const _SectionLabel('결론 (Impression)'),
-                  const SizedBox(height: 4),
+                  _SectionLabel('결론 (Impression)'),
+                  SizedBox(height: 4),
                   Text(impression!,
-                      style: const TextStyle(
+                      style: TextStyle(
                           fontSize: 12,
                           fontWeight: FontWeight.bold,
                           color: AppColors.slate900,
@@ -177,8 +177,8 @@ class CxrClinicalSheet extends StatelessWidget {
             )
           else if (summary != null && summary!.isNotEmpty)
             Container(
-              margin: const EdgeInsets.all(12),
-              padding: const EdgeInsets.all(10),
+              margin: EdgeInsets.all(12),
+              padding: EdgeInsets.all(10),
               decoration: BoxDecoration(
                 color: AppColors.slate50,
                 border: Border.all(color: AppColors.slate300),
@@ -187,10 +187,10 @@ class CxrClinicalSheet extends StatelessWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const _SectionLabel('요약 (Summary)'),
-                  const SizedBox(height: 4),
+                  _SectionLabel('요약 (Summary)'),
+                  SizedBox(height: 4),
                   Text(summary!,
-                      style: const TextStyle(
+                      style: TextStyle(
                           fontSize: 11,
                           color: AppColors.slate800,
                           height: 1.6)),
@@ -227,24 +227,24 @@ Future<void> showCxrClinicalSheet(
       child: Scaffold(
         backgroundColor: AppColors.slate100,
         appBar: AppBar(
-          leading: const SizedBox(),
+          leading: SizedBox(),
           leadingWidth: 0,
-          title: const Text('흉부 X-ray 판독결과지',
+          title: Text('흉부 X-ray 판독결과지',
               style: TextStyle(
                   fontSize: 15,
                   fontWeight: FontWeight.bold,
                   color: AppColors.slate900)),
           actions: [
             IconButton(
-                icon: const Icon(Icons.close, color: AppColors.slate700),
+                icon: Icon(Icons.close, color: AppColors.slate700),
                 onPressed: () => Navigator.pop(ctx)),
           ],
         ),
         body: SingleChildScrollView(
-          padding: const EdgeInsets.all(12),
+          padding: EdgeInsets.all(12),
           child: Container(
             decoration: BoxDecoration(
-              color: Colors.white,
+              color: AppColors.surface,
               border: Border.all(color: AppColors.slate300),
               borderRadius: BorderRadius.circular(4),
             ),
@@ -277,7 +277,7 @@ class _Header extends StatelessWidget {
   final String sexLabel;
   final String? patientId;
   final String? riskLevel;
-  const _Header({
+  _Header({
     required this.patientName,
     required this.age,
     required this.sexLabel,
@@ -306,8 +306,8 @@ class _Header extends StatelessWidget {
       _ => (AppColors.slate100, AppColors.slate600, '—'),
     };
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-      decoration: const BoxDecoration(
+      padding: EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+      decoration: BoxDecoration(
           border: Border(bottom: BorderSide(color: AppColors.slate300))),
       child: Row(
         children: [
@@ -316,13 +316,13 @@ class _Header extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text('$patientName · $sexLabel · $age세',
-                    style: const TextStyle(
+                    style: TextStyle(
                         fontSize: 13,
                         fontWeight: FontWeight.bold,
                         color: AppColors.slate900)),
                 if (patientId != null)
                   Text('ID: $patientId',
-                      style: const TextStyle(
+                      style: TextStyle(
                           fontSize: 10,
                           color: AppColors.slate500,
                           fontFamily: 'monospace')),
@@ -331,7 +331,7 @@ class _Header extends StatelessWidget {
           ),
           Container(
             padding:
-                const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                EdgeInsets.symmetric(horizontal: 8, vertical: 4),
             decoration: BoxDecoration(
                 color: riskBg, borderRadius: BorderRadius.circular(2)),
             child: Text(riskLabel,
@@ -348,22 +348,22 @@ class _Header extends StatelessWidget {
 
 class _Footer extends StatelessWidget {
   final String modal;
-  const _Footer({required this.modal});
+  _Footer({required this.modal});
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-      decoration: const BoxDecoration(
+      padding: EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+      decoration: BoxDecoration(
           border: Border(top: BorderSide(color: AppColors.slate200))),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
           Text('say-6 Deep$modal v2.0',
-              style: const TextStyle(
+              style: TextStyle(
                   fontSize: 9,
                   color: AppColors.slate400,
                   fontFamily: 'monospace')),
-          const Text('응급실 멀티모달 AI 진단 보조',
+          Text('응급실 멀티모달 AI 진단 보조',
               style: TextStyle(
                   fontSize: 9,
                   color: AppColors.slate400,
@@ -376,10 +376,10 @@ class _Footer extends StatelessWidget {
 
 class _SectionLabel extends StatelessWidget {
   final String text;
-  const _SectionLabel(this.text);
+  _SectionLabel(this.text);
   @override
   Widget build(BuildContext context) => Text(text,
-      style: const TextStyle(
+      style: TextStyle(
           fontSize: 14,
           fontWeight: FontWeight.bold,
           color: AppColors.slate900));
@@ -390,7 +390,7 @@ class _MeasureRow extends StatelessWidget {
   final String v;
   final String? status; // 'normal' / 'enlarged' / 'blunt' etc.
   final String? ref;
-  const _MeasureRow({required this.k, required this.v, this.status, this.ref});
+  _MeasureRow({required this.k, required this.v, this.status, this.ref});
 
   @override
   Widget build(BuildContext context) {
@@ -399,13 +399,13 @@ class _MeasureRow extends StatelessWidget {
         status != 'unknown' &&
         status!.isNotEmpty;
     return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 3),
+      padding: EdgeInsets.symmetric(vertical: 3),
       child: Row(
         children: [
           Expanded(
               flex: 4,
               child: Text(k,
-                  style: const TextStyle(
+                  style: TextStyle(
                       fontSize: 11, color: AppColors.slate700))),
           Expanded(
             flex: 3,
@@ -420,11 +420,11 @@ class _MeasureRow extends StatelessWidget {
                         : AppColors.slate900)),
           ),
           if (ref != null) ...[
-            const SizedBox(width: 8),
+            SizedBox(width: 8),
             Expanded(
               flex: 3,
               child: Text(ref!,
-                  style: const TextStyle(
+                  style: TextStyle(
                       fontSize: 10,
                       color: AppColors.slate400,
                       fontFamily: 'monospace')),
@@ -437,10 +437,10 @@ class _MeasureRow extends StatelessWidget {
 }
 
 class _ImagePlaceholder extends StatelessWidget {
-  const _ImagePlaceholder();
+  _ImagePlaceholder();
   @override
   Widget build(BuildContext context) {
-    return const Center(
+    return Center(
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
@@ -470,7 +470,7 @@ class _CxrImageWithOverlay extends StatelessWidget {
   final Map<String, dynamic>? metadata;
   final String? riskLevel;
   final String? subjectId;
-  const _CxrImageWithOverlay({
+  _CxrImageWithOverlay({
     required this.imageUrl,
     required this.measurements,
     required this.metadata,
@@ -480,8 +480,8 @@ class _CxrImageWithOverlay extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final m = measurements ?? const {};
-    final meta = metadata ?? const {};
+    final m = measurements ?? {};
+    final meta = metadata ?? {};
     // 백엔드 응답 metadata.image_size — chest-svc-pre 원본 X-ray의 픽셀 크기
     // 좌표(흉곽/심장/CP각 등)가 이 좌표계 기준이므로 SizedBox도 동일 크기여야 함
     final sizeArr = (meta['image_size'] as List?)?.cast<num>();
@@ -511,7 +511,7 @@ class _CxrImageWithOverlay extends StatelessWidget {
         child: Container(
           color: Colors.black,
           child: imageUrl == null
-              ? const _ImagePlaceholder()
+              ? _ImagePlaceholder()
               : Stack(
                   fit: StackFit.expand,
                   children: [
@@ -519,7 +519,7 @@ class _CxrImageWithOverlay extends StatelessWidget {
                     Image.network(
                       imageUrl!,
                       fit: BoxFit.contain,
-                      errorBuilder: (_, _, _) => const _ImagePlaceholder(),
+                      errorBuilder: (_, _, _) => _ImagePlaceholder(),
                     ),
                     // ② UNet 세그멘테이션 마스크 (반투명 색상 오버레이)
                     if (maskBytes != null)
@@ -568,7 +568,7 @@ class _CxrImageWithOverlay extends StatelessWidget {
                             },
                             filled: true,
                           ),
-                          const SizedBox(height: 4),
+                          SizedBox(height: 4),
                           _PacsBadge(text: '$view VIEW', color: AppColors.slate600),
                         ],
                       ),
@@ -579,7 +579,7 @@ class _CxrImageWithOverlay extends StatelessWidget {
                         top: 8,
                         right: 8,
                         child: Container(
-                          padding: const EdgeInsets.symmetric(
+                          padding: EdgeInsets.symmetric(
                               horizontal: 8, vertical: 4),
                           decoration: BoxDecoration(
                             color: Colors.black,
@@ -591,7 +591,7 @@ class _CxrImageWithOverlay extends StatelessWidget {
                           ),
                           child: Text(
                             'CTR = ${ctr.toStringAsFixed(2)}',
-                            style: const TextStyle(
+                            style: TextStyle(
                               color: Colors.white,
                               fontFamily: 'monospace',
                               fontWeight: FontWeight.bold,
@@ -605,12 +605,12 @@ class _CxrImageWithOverlay extends StatelessWidget {
                       bottom: 6,
                       right: 6,
                       child: Container(
-                        padding: const EdgeInsets.symmetric(
+                        padding: EdgeInsets.symmetric(
                             horizontal: 6, vertical: 3),
                         color: Colors.black.withAlpha(180),
                         child: Row(
                           mainAxisSize: MainAxisSize.min,
-                          children: const [
+                          children: [
                             _LegendDot(color: Color(0xFF3b82f6), label: '흉곽'),
                             SizedBox(width: 6),
                             _LegendDot(color: Color(0xFFef4444), label: '심장'),
@@ -639,11 +639,11 @@ class _PacsBadge extends StatelessWidget {
   final String text;
   final Color color;
   final bool filled;
-  const _PacsBadge({required this.text, required this.color, this.filled = false});
+  _PacsBadge({required this.text, required this.color, this.filled = false});
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+      padding: EdgeInsets.symmetric(horizontal: 6, vertical: 2),
       decoration: BoxDecoration(
         color: filled ? color : Colors.black.withAlpha(220),
         border: Border.all(color: color, width: 1.2),
@@ -664,15 +664,15 @@ class _PacsBadge extends StatelessWidget {
 class _LegendDot extends StatelessWidget {
   final Color color;
   final String label;
-  const _LegendDot({required this.color, required this.label});
+  _LegendDot({required this.color, required this.label});
   @override
   Widget build(BuildContext context) {
     return Row(
       mainAxisSize: MainAxisSize.min,
       children: [
         Container(width: 8, height: 8, decoration: BoxDecoration(color: color, shape: BoxShape.circle)),
-        const SizedBox(width: 3),
-        Text(label, style: const TextStyle(color: Colors.white, fontSize: 9, fontWeight: FontWeight.bold)),
+        SizedBox(width: 3),
+        Text(label, style: TextStyle(color: Colors.white, fontSize: 9, fontWeight: FontWeight.bold)),
       ],
     );
   }
@@ -703,11 +703,11 @@ class _CxrOverlayPainter extends CustomPainter {
     final stroke = imageW * 0.0035;
     final fs = imageW * 0.022;
 
-    final lines = (m['ctr_lines'] as Map?)?.cast<String, dynamic>() ?? const {};
-    final trach = (m['trachea_coords'] as Map?)?.cast<String, dynamic>() ?? const {};
-    final diaph = (m['diaphragm_coords'] as Map?)?.cast<String, dynamic>() ?? const {};
-    final cp = (m['cp_angle_coords'] as Map?)?.cast<String, dynamic>() ?? const {};
-    final medC = (m['mediastinum_coords'] as Map?)?.cast<String, dynamic>() ?? const {};
+    final lines = (m['ctr_lines'] as Map?)?.cast<String, dynamic>() ?? {};
+    final trach = (m['trachea_coords'] as Map?)?.cast<String, dynamic>() ?? {};
+    final diaph = (m['diaphragm_coords'] as Map?)?.cast<String, dynamic>() ?? {};
+    final cp = (m['cp_angle_coords'] as Map?)?.cast<String, dynamic>() ?? {};
+    final medC = (m['mediastinum_coords'] as Map?)?.cast<String, dynamic>() ?? {};
 
     double? d(Map src, String key) => (src[key] as num?)?.toDouble();
 

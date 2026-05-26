@@ -7,7 +7,6 @@ import 'features/dashboard/dashboard_page.dart';
 import 'features/patient/patient_detail_page.dart';
 import 'features/patient/patient_results_page.dart';
 import 'features/report/report_editor_page.dart';
-import 'features/reports/report_list_page.dart';
 import 'features/triage/triage_page.dart';
 import 'features/worklist/worklist_page.dart';
 
@@ -26,8 +25,8 @@ final routerProvider = Provider<GoRouter>((ref) {
     initialLocation: '/',
     routes: [
       GoRoute(path: '/', builder: (_, _) => const LoginPage()),
-      GoRoute(path: '/worklist', builder: (_, _) => const WorklistPage()),
-      GoRoute(path: '/triage', builder: (_, _) => const TriagePage()),
+      GoRoute(path: '/worklist', builder: (_, _) => WorklistPage()),
+      GoRoute(path: '/triage', builder: (_, _) => TriagePage()),
       GoRoute(
         path: '/patient/:id',
         builder: (_, state) =>
@@ -43,8 +42,7 @@ final routerProvider = Provider<GoRouter>((ref) {
         builder: (_, state) =>
             ReportEditorPage(encounterId: state.pathParameters['id'] ?? ''),
       ),
-      GoRoute(path: '/reports', builder: (_, _) => const ReportListPage()),
-      GoRoute(path: '/dashboard', builder: (_, _) => const DashboardPage()),
+      GoRoute(path: '/dashboard', builder: (_, _) => DashboardPage()),
     ],
   );
 });

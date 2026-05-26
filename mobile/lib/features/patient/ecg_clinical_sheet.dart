@@ -28,7 +28,7 @@ class EcgClinicalSheet extends StatelessWidget {
   final bool? tachycardia;
   final bool? irregular;
 
-  const EcgClinicalSheet({
+  EcgClinicalSheet({
     super.key,
     this.patientName = '환자',
     this.age = 0,
@@ -63,18 +63,18 @@ class EcgClinicalSheet extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      color: Colors.white,
+      color: AppColors.surface,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           // ── 헤더 ──
           Container(
             padding:
-                const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
-            decoration: const BoxDecoration(
+                EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+            decoration: BoxDecoration(
                 border: Border(bottom: BorderSide(color: AppColors.slate400))),
             child: DefaultTextStyle(
-              style: const TextStyle(
+              style: TextStyle(
                   fontSize: 10,
                   color: AppColors.slate800,
                   fontFamily: 'monospace'),
@@ -98,7 +98,7 @@ class EcgClinicalSheet extends StatelessWidget {
                           ],
                         ),
                       ),
-                      const SizedBox(width: 10),
+                      SizedBox(width: 10),
                       // 중: 측정값
                       Expanded(
                         flex: 5,
@@ -115,15 +115,15 @@ class EcgClinicalSheet extends StatelessWidget {
                       ),
                     ],
                   ),
-                  const SizedBox(height: 6),
+                  SizedBox(height: 6),
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      const Text('10mm/mV  25mm/s'),
+                      Text('10mm/mV  25mm/s'),
                       Text(_tsLine,
                           style:
-                              const TextStyle(color: AppColors.slate500)),
-                      const Text('Minnesota (03-05)',
+                              TextStyle(color: AppColors.slate500)),
+                      Text('Minnesota (03-05)',
                           style: TextStyle(color: AppColors.slate500)),
                     ],
                   ),
@@ -133,7 +133,7 @@ class EcgClinicalSheet extends StatelessWidget {
           ),
           // ── 12-Lead 그리드 ──
           Padding(
-            padding: const EdgeInsets.all(8),
+            padding: EdgeInsets.all(8),
             child: AspectRatio(
               aspectRatio: 720 / 270,
               child: CustomPaint(
@@ -146,19 +146,19 @@ class EcgClinicalSheet extends StatelessWidget {
           // ── 판정 코드 ──
           Padding(
             padding:
-                const EdgeInsets.symmetric(horizontal: 10, vertical: 2),
+                EdgeInsets.symmetric(horizontal: 10, vertical: 2),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 for (final it in interpretation)
                   Padding(
-                    padding: const EdgeInsets.only(bottom: 2),
+                    padding: EdgeInsets.only(bottom: 2),
                     child: Row(
                       children: [
                         SizedBox(
                           width: 40,
                           child: Text(it.code,
-                              style: const TextStyle(
+                              style: TextStyle(
                                   fontFamily: 'monospace',
                                   fontSize: 10,
                                   color: AppColors.slate500)),
@@ -181,7 +181,7 @@ class EcgClinicalSheet extends StatelessWidget {
           ),
           // ── Lead II 리듬 스트립 ──
           Padding(
-            padding: const EdgeInsets.fromLTRB(8, 6, 8, 8),
+            padding: EdgeInsets.fromLTRB(8, 6, 8, 8),
             child: AspectRatio(
               aspectRatio: 720 / 110,
               child: CustomPaint(
@@ -194,10 +194,10 @@ class EcgClinicalSheet extends StatelessWidget {
           // ── 푸터 ──
           Container(
             padding:
-                const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-            decoration: const BoxDecoration(
+                EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+            decoration: BoxDecoration(
                 border: Border(top: BorderSide(color: AppColors.slate200))),
-            child: const Row(
+            child: Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
                 Text('1350K · say-6 응급실 멀티모달 AI 진단 보조',
@@ -221,14 +221,14 @@ class EcgClinicalSheet extends StatelessWidget {
   Widget _kv(String k, String v,
       {bool bold = false, Color? valueColor}) {
     return Padding(
-      padding: const EdgeInsets.only(bottom: 1),
+      padding: EdgeInsets.only(bottom: 1),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           SizedBox(
             width: 70,
             child: Text(k,
-                style: const TextStyle(
+                style: TextStyle(
                     color: AppColors.slate500, fontFamily: 'monospace')),
           ),
           Expanded(
@@ -255,7 +255,7 @@ abstract class _EcgLayout {
 
 // MIMIC ECG 채널 순서: I, II, V1~V6, III, aVR, aVL, aVF (PTB-XL 표준)
 // 12-lead 표시 순서(4×3 그리드)
-const _leadOrder = [
+final _leadOrder = [
   // (row, col): leadName, channelIndex in waveform
   [(0, 0, 'I', 0), (0, 1, 'aVR', 9), (0, 2, 'V1', 2), (0, 3, 'V4', 5)],
   [(1, 0, 'II', 1), (1, 1, 'aVL', 10), (1, 2, 'V2', 3), (1, 3, 'V5', 6)],
@@ -267,7 +267,7 @@ class _Ecg12LeadLayout extends _EcgLayout {
   _Ecg12LeadLayout({this.waveform});
 
   @override
-  Size get logicalSize => const Size(720, 270);
+  Size get logicalSize => Size(720, 270);
 
   @override
   void paintLeads(Canvas canvas, Size size) {
@@ -277,7 +277,7 @@ class _Ecg12LeadLayout extends _EcgLayout {
       ..color = AppColors.slate900
       ..strokeWidth = 0.9
       ..style = PaintingStyle.stroke;
-    final labelStyle = const TextStyle(
+    final labelStyle = TextStyle(
         fontFamily: 'monospace',
         fontSize: 10,
         color: AppColors.slate700,
@@ -335,7 +335,7 @@ class _EcgRhythmLayout extends _EcgLayout {
   _EcgRhythmLayout({this.waveform});
 
   @override
-  Size get logicalSize => const Size(720, 110);
+  Size get logicalSize => Size(720, 110);
 
   @override
   void paintLeads(Canvas canvas, Size size) {
@@ -343,7 +343,7 @@ class _EcgRhythmLayout extends _EcgLayout {
       ..color = AppColors.slate900
       ..strokeWidth = 0.9
       ..style = PaintingStyle.stroke;
-    final labelStyle = const TextStyle(
+    final labelStyle = TextStyle(
         fontFamily: 'monospace',
         fontSize: 9,
         color: AppColors.slate700,
@@ -355,7 +355,7 @@ class _EcgRhythmLayout extends _EcgLayout {
           style: labelStyle),
       textDirection: TextDirection.ltr,
     )..layout();
-    tp.paint(canvas, const Offset(6, 4));
+    tp.paint(canvas, Offset(6, 4));
     final baseline = size.height * 0.6;
     canvas.drawPath(
       _calibrationPath(2, baseline, size.height * 0.4),
@@ -485,17 +485,17 @@ class _EcgGridPainter extends CustomPainter {
   void paint(Canvas canvas, Size size) {
     // 핑크 그리드 배경
     final smPaint = Paint()
-      ..color = const Color(0xFFfda4af).withAlpha(80)
+      ..color = Color(0xFFfda4af).withAlpha(80)
       ..strokeWidth = 0.4;
     final lgPaint = Paint()
-      ..color = const Color(0xFFfb7185).withAlpha(120)
+      ..color = Color(0xFFfb7185).withAlpha(120)
       ..strokeWidth = 0.7;
-    final bg = Paint()..color = const Color(0xFFfff1f2).withAlpha(60);
+    final bg = Paint()..color = Color(0xFFfff1f2).withAlpha(60);
     canvas.drawRect(Offset.zero & size, bg);
 
     // 5px 마다 small line, 25px 마다 large line (대략 ECG 표준)
-    const sm = 6.0;
-    const lg = 30.0;
+    final sm = 6.0;
+    final lg = 30.0;
     for (double x = 0; x <= size.width; x += sm) {
       canvas.drawLine(Offset(x, 0), Offset(x, size.height),
           x % lg == 0 ? lgPaint : smPaint);
@@ -509,7 +509,7 @@ class _EcgGridPainter extends CustomPainter {
     canvas.drawRect(
       Offset.zero & size,
       Paint()
-        ..color = const Color(0xFFfb7185)
+        ..color = Color(0xFFfb7185)
         ..strokeWidth = 1
         ..style = PaintingStyle.stroke,
     );
@@ -577,24 +577,24 @@ Future<void> showEcgClinicalSheet(
       child: Scaffold(
         backgroundColor: AppColors.slate100,
         appBar: AppBar(
-          leading: const SizedBox(),
+          leading: SizedBox(),
           leadingWidth: 0,
-          title: const Text('12-Lead 심전도 검사결과지',
+          title: Text('12-Lead 심전도 검사결과지',
               style: TextStyle(
                   fontSize: 15,
                   fontWeight: FontWeight.bold,
                   color: AppColors.slate900)),
           actions: [
             IconButton(
-                icon: const Icon(Icons.close, color: AppColors.slate700),
+                icon: Icon(Icons.close, color: AppColors.slate700),
                 onPressed: () => Navigator.pop(ctx)),
           ],
         ),
         body: SingleChildScrollView(
-          padding: const EdgeInsets.all(12),
+          padding: EdgeInsets.all(12),
           child: Container(
             decoration: BoxDecoration(
-              color: Colors.white,
+              color: AppColors.surface,
               border: Border.all(color: AppColors.slate300),
               borderRadius: BorderRadius.circular(4),
             ),

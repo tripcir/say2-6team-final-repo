@@ -14,7 +14,7 @@ import '../../shared/widgets/ktas_badge.dart';
 /// 헤더: 흰 배경 + slate-200 border-bottom. 카드: 흰 배경 + slate-300 border.
 /// 행 클릭 → /patient/:id (AI 분석)
 class WorklistPage extends ConsumerWidget {
-  const WorklistPage({super.key});
+  WorklistPage({super.key});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -22,16 +22,16 @@ class WorklistPage extends ConsumerWidget {
 
     return Scaffold(
       backgroundColor: AppColors.slate50,
-      appBar: const EmonTopBar(current: 'worklist'),
+      appBar: EmonTopBar(current: 'worklist'),
       body: async.when(
-        loading: () => const Center(child: CircularProgressIndicator()),
+        loading: () => Center(child: CircularProgressIndicator()),
         error: (e, _) => _ErrorView(
           message: '$e',
           onRetry: () => ref.invalidate(encountersListProvider),
         ),
         data: (list) {
           if (list.isEmpty) {
-            return const Center(
+            return Center(
               child: Padding(
                 padding: EdgeInsets.all(40),
                 child: Text('조건에 맞는 환자가 없습니다.',
@@ -42,9 +42,9 @@ class WorklistPage extends ConsumerWidget {
           return RefreshIndicator(
             onRefresh: () async => ref.invalidate(encountersListProvider),
             child: ListView.separated(
-              padding: const EdgeInsets.all(12),
+              padding: EdgeInsets.all(12),
               itemCount: list.length,
-              separatorBuilder: (_, _) => const SizedBox(height: 8),
+              separatorBuilder: (_, _) => SizedBox(height: 8),
               itemBuilder: (context, i) {
                 final e = list[i];
                 return _PatientCard(
@@ -71,32 +71,21 @@ class _NotificationBell extends ConsumerWidget {
     //   · 검사 완료·작성 가능: 0~5분 (preliminary)
     //   · 미서명 소견서: 5분 경과 (preliminary or reviewed)
     //   · Critical: 미서명 상태 + ai_risk_level=critical
+    // 알림 종 카운트 — 알림 패널과 동일하게 preliminary + signed 전체 건수
     final count = async.maybeWhen(
-      data: (rows) {
-        int n = 0;
-        for (final r in rows) {
-          if (r.status == 'signed' || r.status == 'amended') continue;
-          final e = r.createdAt == null
-              ? null
-              : DateTime.now().difference(r.createdAt!).inMinutes;
-          final overdue = e != null && e >= 5;
-
-          if (r.status == 'preliminary' && !overdue) n++; // ready
-          if ((r.status == 'preliminary' || r.status == 'reviewed') &&
-              overdue) {
-            n++; // unsigned
-          }
-          if (r.aiRiskLevel == 'critical') n++; // critical
-        }
-        return n;
-      },
+      data: (rows) => rows
+          .where((r) =>
+              r.status == 'preliminary' ||
+              r.status == 'signed' ||
+              r.status == 'amended')
+          .length,
       orElse: () => 0,
     );
     return Stack(
       clipBehavior: Clip.none,
       children: [
         IconButton(
-          icon: const Icon(Icons.notifications_outlined,
+          icon: Icon(Icons.notifications_outlined,
               color: AppColors.slate600),
           onPressed: () => NotificationsPanel.show(context),
         ),
@@ -105,8 +94,8 @@ class _NotificationBell extends ConsumerWidget {
             top: 6,
             right: 6,
             child: Container(
-              constraints: const BoxConstraints(minWidth: 16, minHeight: 16),
-              padding: const EdgeInsets.symmetric(horizontal: 4),
+              constraints: BoxConstraints(minWidth: 16, minHeight: 16),
+              padding: EdgeInsets.symmetric(horizontal: 4),
               decoration: BoxDecoration(
                 color: AppColors.critical,
                 borderRadius: BorderRadius.circular(8),
@@ -114,7 +103,7 @@ class _NotificationBell extends ConsumerWidget {
               child: Text(
                 '$count',
                 textAlign: TextAlign.center,
-                style: const TextStyle(
+                style: TextStyle(
                     color: Colors.white,
                     fontSize: 10,
                     fontWeight: FontWeight.bold),
@@ -130,21 +119,26 @@ class _PatientCard extends StatelessWidget {
   final Encounter encounter;
   final int index;
   final VoidCallback onTap;
-  const _PatientCard(
+  _PatientCard(
       {required this.encounter,
       required this.index,
       required this.onTap});
 
   // backend에 KTAS 없어서 ai_risk_level로 매핑 (임시):
-  // critical → 2 (긴급), urgent → 3 (응급), routine → 4 (준응급), null → 5
+  // resuscitation → 1 (소생), critical → 2 (긴급), urgent → 3 (응급),
+  // routine → 4 (준응급), minor/null → 5 (비응급)
   int _deriveKtas() {
     switch (encounter.aiRiskLevel) {
+      case 'resuscitation':
+        return 1;
       case 'critical':
         return 2;
       case 'urgent':
         return 3;
       case 'routine':
         return 4;
+      case 'minor':
+        return 5;
       default:
         return 5;
     }
@@ -157,16 +151,16 @@ class _PatientCard extends StatelessWidget {
         encounter.encounterId.substring(0, 8); // MIMIC subject_id 우선
 
     return Material(
-      color: Colors.white,
+      color: AppColors.surface,
       shape: RoundedRectangleBorder(
-        side: const BorderSide(color: AppColors.slate300),
+        side: BorderSide(color: AppColors.slate300),
         borderRadius: BorderRadius.circular(4),
       ),
       child: InkWell(
         onTap: onTap,
         borderRadius: BorderRadius.circular(4),
         child: Padding(
-          padding: const EdgeInsets.all(12),
+          padding: EdgeInsets.all(12),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
@@ -175,26 +169,26 @@ class _PatientCard extends StatelessWidget {
                 children: [
                   Text(
                     '$index',
-                    style: const TextStyle(
+                    style: TextStyle(
                         fontSize: 11,
                         color: AppColors.slate400,
                         fontFeatures: [FontFeature.tabularFigures()]),
                   ),
-                  const SizedBox(width: 12),
+                  SizedBox(width: 12),
                   Text(
                     regNo,
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontSize: 12,
                       color: AppColors.brand700,
                       decoration: TextDecoration.underline,
                       fontFeatures: [FontFeature.tabularFigures()],
                     ),
                   ),
-                  const Spacer(),
+                  Spacer(),
                   KtasBadge(level: ktas),
                 ],
               ),
-              const SizedBox(height: 8),
+              SizedBox(height: 8),
               // Row 2: 환자명 + 나이/성별
               Row(
                 crossAxisAlignment: CrossAxisAlignment.baseline,
@@ -202,44 +196,44 @@ class _PatientCard extends StatelessWidget {
                 children: [
                   Text(
                     encounter.patientName,
-                    style: const TextStyle(
+                    style: TextStyle(
                         fontSize: 16,
                         fontWeight: FontWeight.bold,
                         color: AppColors.slate900),
                   ),
-                  const SizedBox(width: 8),
+                  SizedBox(width: 8),
                   if (encounter.patientAge != null)
                     Text(
                       '${encounter.patientAge}세 / ${_genderKo(encounter.patientGender)}',
-                      style: const TextStyle(
+                      style: TextStyle(
                           fontSize: 12, color: AppColors.slate500),
                     ),
                 ],
               ),
-              const SizedBox(height: 6),
+              SizedBox(height: 6),
               // Row 3: 주증상
               Text(
                 encounter.chiefComplaint ?? '주증상 미입력',
-                style: const TextStyle(
+                style: TextStyle(
                     fontSize: 12, color: AppColors.slate600, height: 1.4),
                 maxLines: 2,
                 overflow: TextOverflow.ellipsis,
               ),
-              const SizedBox(height: 10),
+              SizedBox(height: 10),
               // Row 4: 등록시각 + 검사 상태 배지
               Row(
                 children: [
                   Icon(Icons.access_time,
                       size: 11, color: AppColors.slate400),
-                  const SizedBox(width: 4),
+                  SizedBox(width: 4),
                   Text(
                     _fmtTime(encounter.startedAt),
-                    style: const TextStyle(
+                    style: TextStyle(
                         fontSize: 11,
                         color: AppColors.slate500,
                         fontFeatures: [FontFeature.tabularFigures()]),
                   ),
-                  const Spacer(),
+                  Spacer(),
                   _ExamStatusBadge(reportStatus: encounter.reportStatus),
                 ],
               ),
@@ -265,38 +259,33 @@ class _PatientCard extends StatelessWidget {
 /// 모바일에선 단순화: reportStatus 기반.
 class _ExamStatusBadge extends StatelessWidget {
   final String? reportStatus;
-  const _ExamStatusBadge({required this.reportStatus});
+  _ExamStatusBadge({required this.reportStatus});
 
   @override
   Widget build(BuildContext context) {
     final (label, bg, border, fg) = switch (reportStatus) {
       'signed' || 'amended' => (
-        '✓ 서명 완료',
+        '✓ 소견 완료',
         AppColors.emerald100,
         AppColors.emerald400,
         AppColors.emerald700,
       ),
-      'reviewed' => (
-        '검토 중',
-        AppColors.purple50,
-        AppColors.purple300,
-        AppColors.purple700,
-      ),
       'preliminary' => (
-        '✓ 검사 완료',
-        AppColors.emerald50,
-        AppColors.emerald300,
-        AppColors.emerald700,
+        '소견 생성 완료 · 확정 대기',
+        AppColors.blue50,
+        AppColors.blue300,
+        AppColors.blue700,
       ),
+      // 검토 중(reviewed) · 분석 중(default) 등 그 외 모든 상태는 '검사 완료'로 표시
       _ => (
-        '분석 중',
+        '검사 완료',
         AppColors.amber100,
         AppColors.amber400,
         AppColors.amber700,
       ),
     };
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+      padding: EdgeInsets.symmetric(horizontal: 8, vertical: 3),
       decoration: BoxDecoration(
         color: bg,
         border: Border.all(color: border),
@@ -314,30 +303,30 @@ class _ExamStatusBadge extends StatelessWidget {
 class _ErrorView extends StatelessWidget {
   final String message;
   final VoidCallback onRetry;
-  const _ErrorView({required this.message, required this.onRetry});
+  _ErrorView({required this.message, required this.onRetry});
 
   @override
   Widget build(BuildContext context) {
     return Center(
       child: Padding(
-        padding: const EdgeInsets.all(24),
+        padding: EdgeInsets.all(24),
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            const Icon(Icons.cloud_off,
+            Icon(Icons.cloud_off,
                 size: 48, color: AppColors.slate300),
-            const SizedBox(height: 12),
-            const Text('백엔드 연결 실패',
+            SizedBox(height: 12),
+            Text('백엔드 연결 실패',
                 style: TextStyle(
                     fontWeight: FontWeight.bold,
                     color: AppColors.slate700)),
-            const SizedBox(height: 4),
+            SizedBox(height: 4),
             Text(message,
-                style: const TextStyle(
+                style: TextStyle(
                     fontSize: 11, color: AppColors.slate500),
                 textAlign: TextAlign.center),
-            const SizedBox(height: 16),
-            OutlinedButton(onPressed: onRetry, child: const Text('재시도')),
+            SizedBox(height: 16),
+            OutlinedButton(onPressed: onRetry, child: Text('재시도')),
           ],
         ),
       ),
